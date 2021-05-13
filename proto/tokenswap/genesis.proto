@@ -1,0 +1,11 @@
+syntax = "proto3";
+package rizonworld.rizon.tokenswap;
+
+import "gogoproto/gogo.proto";
+import "tokenswap/params.proto";
+
+option go_package = "github.com/rizon-world/rizon/x/tokenswap/types";
+
+message GenesisState {
+  Params params = 1 [(gogoproto.nullable) = false];
+}

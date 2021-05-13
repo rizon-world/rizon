@@ -1,0 +1,39 @@
+syntax = "proto3";
+package rizonworld.rizon.treasury;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/rizon-world/rizon/x/treasury/types";
+
+// Msg defines the treasury Msg service.
+service Msg {
+  // Mint defines a method for minting coins
+  rpc Mint(MsgMintRequest) returns (MsgMintResponse);
+  // Burn defines a method for burning coins
+  rpc Burn(MsgBurnRequest) returns (MsgBurnResponse);
+}
+
+// MsgMintRequest defines the Msg/Mint request type
+message MsgMintRequest {
+  // receiver is the target address of minted coins
+  string receiver = 1 [(gogoproto.moretags) = "yaml:\"receiver\""];
+  // signer is who requests minting
+  string signer = 2 [(gogoproto.moretags) = "yaml:\"signer\""];
+  // amount is the amount to mint
+  cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
+}
+
+// MsgMintResponse defines the Msg/Mint response type
+message MsgMintResponse {}
+
+// MsgBurnRequest defines the Msg/Burn request type
+message MsgBurnRequest {
+  // signer is who requests burning
+  string signer = 1 [(gogoproto.moretags) = "yaml:\"signer\""];
+  // amount is the amount to burn
+  cosmos.base.v1beta1.Coin amount = 2 [(gogoproto.nullable) = false];
+}
+
+// MsgBurnResponse defines the Msg/Burn response type
+message MsgBurnResponse {}

@@ -1,0 +1,62 @@
+syntax = "proto3";
+package rizonworld.rizon.treasury;
+
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "treasury/treasury.proto";
+import "treasury/params.proto";
+
+option go_package = "github.com/rizon-world/rizon/x/treasury/types";
+
+// Query defines the gRPC querier service
+service Query {
+  // Currencies queries all supported currency denom list
+  rpc Currencies(QueryCurrenciesRequest) returns (QueryCurrenciesResponse) {
+    option (google.api.http).get = "/rizon/treasury/currencies";
+  }
+  // Currency queries a currency info
+  rpc Currency(QueryCurrencyRequest) returns (QueryCurrencyResponse) {
+    option (google.api.http).get = "/rizon/treasury/currencies/{denom}";
+  }
+  // Params queries parameters of treasury
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/rizon/treasury/params";
+  }
+}
+
+// QueryCurrenciesRequest is request type for the Query/Currencies RPC method
+message QueryCurrenciesRequest {
+  // pagination defines an optional pagination for the request
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryCurrenciesResponse is response type for the Query/Currencies RPC method
+message QueryCurrenciesResponse {
+  // Currencies defines all supported currency denom list
+  Currencies currencies = 1;
+
+  // pagination defines the pagination in the response
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryCurrencyRequest is request type for the Query/Currency RPC method
+message QueryCurrencyRequest {
+  // denom defines the denom to query for
+  string denom = 1;
+}
+
+// QueryCurrencyResponse is response type for the Query/Currency RPC method
+message QueryCurrencyResponse {
+  // Currency defines a currency info
+  Currency currency = 1;
+}
+
+// QueryParamsRequest is request type for the Query/Params RPC method
+message QueryParamsRequest {}
+
+// QueryParamsResponse is response type for the Query/Params RPC method
+message QueryParamsResponse {
+  // params defines the parameters of treasury module
+  Params params = 1 [(gogoproto.nullable) = false];
+}

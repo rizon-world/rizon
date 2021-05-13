@@ -1,0 +1,22 @@
+syntax = "proto3";
+package rizonworld.rizon.treasury;
+
+import "gogoproto/gogo.proto";
+import "treasury/treasury.proto";
+
+option go_package = "github.com/rizon-world/rizon/x/treasury/types";
+
+// Params defines the parameters for the treasury module
+message Params {
+  option (gogoproto.goproto_stringer) = false;
+
+  // mintable indicates whether every currencie of treasury module are able to mint or not
+  bool mintable = 1 [(gogoproto.moretags) = "yaml:\"mintable\""];
+  // sequence of currency state
+  int64 sequence = 2 [(gogoproto.moretags) = "yaml:\"sequence\""];
+  // currency_list is the list of supported currencies
+  repeated Currency currency_list  = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.moretags) = "yaml:\"currency_list\""
+  ];
+}

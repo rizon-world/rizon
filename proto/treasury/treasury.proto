@@ -1,0 +1,30 @@
+syntax = "proto3";
+package rizonworld.rizon.treasury;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/rizon-world/rizon/x/treasury/types";
+
+// Currency defines a single currency info
+message Currency {
+  // denom is the name of the currency
+  string denom = 1 [(gogoproto.moretags) = "yaml:\"denom\""];
+  // desc is a description of the currency
+  string desc = 2 [(gogoproto.moretags) = "yaml:\"desc\""];
+  // owner is who can mint this currency
+  string owner = 3 [(gogoproto.moretags) = "yaml:\"owner\""];
+  // mintable indicates whether this currency can be minted or not
+  bool mintable = 4 [(gogoproto.moretags) = "yaml:\"mintable\""];
+}
+
+// Currencies
+message Currencies {
+  // denoms is the denom list of all currencies
+  repeated string denoms = 1 [(gogoproto.moretags) = "yaml:\"denoms\""];
+}
+
+// Sequence
+message Sequence {
+  // number is the currency sequence number of current state
+  int64 number = 1 [(gogoproto.moretags) = "yaml:\"number\""];
+}

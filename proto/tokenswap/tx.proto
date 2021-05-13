@@ -1,0 +1,28 @@
+syntax = "proto3";
+package rizonworld.rizon.tokenswap;
+
+option go_package = "github.com/rizon-world/rizon/x/tokenswap/types";
+
+import "gogoproto/gogo.proto";
+
+// Msg defines the tokenswap Msg service.
+service Msg {
+  // CreateTokenswap defines a method for creating a new tokenswap
+  rpc CreateTokenswap(MsgCreateTokenswapRequest) returns (MsgCreateTokenswapResponse);
+}
+
+// MsgCreateTokenswapRequest defines a SDK message for creating a new tokenswap
+message MsgCreateTokenswapRequest {
+  // tx_hash is the tx hash of burn tx from legacy chain
+  // tx_hash is used for store key
+  string tx_hash = 1 [(gogoproto.moretags) = "yaml:\"tx_hash\""];
+  // receiver is the target of tokenswap
+  string receiver = 2 [(gogoproto.moretags) = "yaml:\"receiver\""];
+  // signer is who confirms the swap process
+  string signer = 3 [(gogoproto.moretags) = "yaml:\"signer\""];
+  // amount is the amount of swap process
+  string amount = 4 [(gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"];
+}
+
+// MsgCreatetokenswapResponse defines the Msg/CreateTokenswap response type
+message MsgCreateTokenswapResponse {}

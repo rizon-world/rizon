@@ -1,0 +1,15 @@
+syntax = "proto3";
+package rizonworld.rizon.treasury;
+
+import "gogoproto/gogo.proto";
+import "treasury/params.proto";
+import "treasury/treasury.proto";
+
+option go_package = "github.com/rizon-world/rizon/x/treasury/types";
+
+// GenesisState defines the module's genesis state
+message GenesisState {
+  // params defines all the paramaters of treasury module
+  Params params = 1 [(gogoproto.nullable) = false];
+  Sequence seq = 2 [(gogoproto.nullable) = false];
+}

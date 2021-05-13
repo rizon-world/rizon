@@ -1,0 +1,42 @@
+syntax = "proto3";
+package rizonworld.rizon.tokenswap;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "tokenswap/tokenswap.proto";
+import "tokenswap/params.proto";
+
+option go_package = "github.com/rizon-world/rizon/x/tokenswap/types";
+
+// Query defines the gRPC querier service
+service Query {
+  // Tokenswap queries tokenswap item for given tx hash
+  rpc Tokenswap(QueryTokenswapRequest) returns (QueryTokenswapResponse) {
+    option (google.api.http).get = "/rizon/tokenswap/{tx_hash}";
+  }
+  // Params queries parameters of tokenswap
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/rizon/tokenswap/params";
+  }
+}
+
+// QueryTokenswapRequest is request type for the Query/Tokenswap RPC method
+message QueryTokenswapRequest {
+  // tx_hash defines the tx hash to query for
+  string tx_hash = 1;
+}
+
+// QueryTokenswapResponse is response type for the Query/Tokenswap RPC method
+message QueryTokenswapResponse {
+  // tokenswap defines the tokenswap info
+  Tokenswap tokenswap = 1;
+}
+
+// QueryParamsRequest is request type for the Query/Params RPC method
+message QueryParamsRequest {}
+
+// QueryParamsResponse is response type for the Query/Params RPC method
+message QueryParamsResponse {
+  // params defines the parameters of tokenswap
+  Params params = 1 [(gogoproto.nullable) = false];
+}

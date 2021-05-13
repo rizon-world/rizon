@@ -1,0 +1,21 @@
+syntax = "proto3";
+package rizonworld.rizon.tokenswap;
+
+option go_package = "github.com/rizon-world/rizon/x/tokenswap/types";
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+// Tokenswap defines the tokenswap state
+message Tokenswap {
+  // tx_hash is the tx hash of burn tx from legacy chain
+  // tx_hash is used for store key
+  string tx_hash = 1;
+  // receiver is the target of tokenswap
+  string receiver = 2; 
+  // signer is who confirms the swap process
+  string signer = 3; 
+  // amount is the amount of swap process
+  repeated cosmos.base.v1beta1.Coin amount = 4 [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+}
+
