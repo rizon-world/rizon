@@ -6,6 +6,8 @@ This module is for coinswap from HDAC chain to RIZON chain.
 
 ## State
 
+See proto files on [https://github.com/rizon-world/rizon/tree/master/proto/tokenswap](https://github.com/rizon-world/rizon/tree/master/proto/tokenswap)
+
 ### Tokenswap
 
 Tokenswap defines the tokenswap state
@@ -43,6 +45,8 @@ type Params struct {
 
 MsgCreateTokenswapRequest defines a SDK message for creating a new tokenswap
 
+#### structure
+
 ```go
 type MsgCreateTokenswapRequest struct {
         // tx_hash is the tx hash of burn tx from legacy chain
@@ -54,6 +58,24 @@ type MsgCreateTokenswapRequest struct {
         Signer string `protobuf:"bytes,3,opt,name=signer,proto3" json:"signer,omitempty" yaml:"signer"`
         // amount is the amount of swap process
         Amount *github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,4,opt,name=amount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"amount,omitempty"`
+}
+```
+
+#### request sample
+
+```javascript
+{
+    "body": {
+        "messages": [
+            {
+                "@type": "/rizonworld.rizon.tokenswap.MsgCreateTokenswapRequest",
+                "amount": "3.000000000000000000",
+                "receiver": "rizon1rkxs2xeq93qlwhvcp2wp8zpstrp8vver3ap4y5",
+                "signer": "rizon136fzkc73rm5def5fngs386qdlxcuvxvrte8lk7",
+                "tx_hash": "a4aa35ffe32f5d2d0fbb5a3b2273695c44576c11e529760f0fbf7ed16d90e99f"
+            }
+        ],
+    },
 }
 ```
 

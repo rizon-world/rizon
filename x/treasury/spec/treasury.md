@@ -6,6 +6,8 @@ The treasury manages all stable currencies which are supported by Rizon platform
 
 ## State
 
+See proto files on [https://github.com/rizon-world/rizon/tree/master/proto/treasury](https://github.com/rizon-world/rizon/tree/master/proto/treasury)
+
 ### Currency
 
 Currency defines a single currency info
@@ -66,6 +68,8 @@ type Params struct {
 
 MsgMintRequest defines a SDK message for minting currency
 
+#### structure
+
 ```go
 type MsgMintRequest struct {
         // receiver is the target address of minted coins
@@ -77,9 +81,30 @@ type MsgMintRequest struct {
 }
 ```
 
+#### request sample
+
+```javascript
+{
+    "body": {
+        "messages": [
+            {
+                "@type": "/rizonworld.rizon.treasury.MsgMintRequest",
+                "amount": {
+                    "amount": "100",
+                    "denom": "skrw"
+                },
+                "receiver": "rizon136fzkc73rm5def5fngs386qdlxcuvxvrte8lk7",
+                "signer": "rizon136fzkc73rm5def5fngs386qdlxcuvxvrte8lk7"
+            }
+        ],
+}
+```
+
 ### MsgBurnRequest
 
 MsgBurnRequest defines a SDK message for burning currency
+
+#### structure
 
 ```go
 type MsgBurnRequest struct {
@@ -87,6 +112,24 @@ type MsgBurnRequest struct {
         Signer string `protobuf:"bytes,1,opt,name=signer,proto3" json:"signer,omitempty" yaml:"signer"`
         // amount is the amount to burn
         Amount types.Coin `protobuf:"bytes,2,opt,name=amount,proto3" json:"amount"`
+}
+```
+
+#### request sample
+
+```javascript
+{
+    "body": {
+        "messages": [
+            {
+                "@type": "/rizonworld.rizon.treasury.MsgBurnRequest",
+                "amount": {
+                    "amount": "100",
+                    "denom": "susd"
+                },
+                "signer": "rizon136fzkc73rm5def5fngs386qdlxcuvxvrte8lk7"
+            }
+        ],
 }
 ```
 
