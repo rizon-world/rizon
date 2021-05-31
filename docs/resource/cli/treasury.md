@@ -36,11 +36,23 @@ Create a tx of burn coin request
 $ rizond tx treasury burn [amount] --from [address] [flags]
 ```
 
+#### sample
+
+```bash
+$ rizond tx treasury burn 100susd --from susd_owner --chain-id adora
+```
+
 ### mint
 
 Create a tx of mint coin request
 
 ```bash
 $ rizond tx treasury mint [amount] [receiver-address] --from [address] [flags]
+```
+
+#### sample
+
+```bash
+$ rizond tx treasury mint 100skrw rizon136fzkc73rm5def5fngs386qdlxcuvxvrte8lk7 --from skrw_owner --chain-id adora
 ```
 
