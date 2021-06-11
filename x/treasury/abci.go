@@ -1,6 +1,8 @@
 package treasury
 
 import (
+	"strconv"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/rizon-world/rizon/x/treasury/keeper"
@@ -32,6 +34,14 @@ func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
 	var denoms []string
 	for _, c := range params.CurrencyList {
 		k.SetCurrency(ctx, c)
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(types.EventTypeCurrencyUpdate,
+				sdk.NewAttribute(types.AttributeKeyDenom, c.Denom),
+				sdk.NewAttribute(types.AttributeKeyDesc, c.Desc),
+				sdk.NewAttribute(types.AttributeKeyOwner, c.Owner),
+				sdk.NewAttribute(types.AttributeKeyMintable, strconv.FormatBool(c.Mintable)),
+			),
+		)
 		denoms = append(denoms, c.Denom)
 	}
 	k.SetCurrencies(ctx, types.NewCurrencies(denoms))
