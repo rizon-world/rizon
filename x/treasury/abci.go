@@ -33,6 +33,9 @@ func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
 	params := k.GetParams(ctx)
 	var denoms []string
 	for _, c := range params.CurrencyList {
+		if "uatolo" == c.Denom {
+			continue
+		}
 		k.SetCurrency(ctx, c)
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(types.EventTypeCurrencyUpdate,
