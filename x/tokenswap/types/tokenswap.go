@@ -5,7 +5,8 @@ import (
 )
 
 const (
-	SwapLimitation = 2_800_000_000
+	MaxSupply      = 2_851_982_500
+	SwapLimitation = 1_500_000_000 // estimation of maximum swappable amount
 )
 
 // Newtokenswap creates a new swap state object
