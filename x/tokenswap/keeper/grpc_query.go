@@ -40,6 +40,14 @@ func (k Querier) Tokenswap(c context.Context, req *types.QueryTokenswapRequest) 
 	return &types.QueryTokenswapResponse{Tokenswap: &res}, nil
 }
 
+// SwappedAmount queries current swapped amount of tokenswap
+func (k Querier) SwappedAmount(c context.Context, _ *types.QuerySwappedAmountRequest) (*types.QuerySwappedAmountResponse, error) {
+	ctx := sdk.UnwrapSDKContext(c)
+	amt := k.Keeper.GetSwappedAmount(ctx)
+
+	return &types.QuerySwappedAmountResponse{SwappedAmount: types.NewSwappedAmount(amt)}, nil
+}
+
 // Params queries the parameters of tokenswap
 func (k Querier) Params(c context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
