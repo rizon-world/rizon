@@ -9,4 +9,5 @@ var (
 	ErrUnauthorizedSigner = sdkerrors.Register(ModuleName, 3, "unauthorized signer")
 	ErrInvalidTxHash      = sdkerrors.Register(ModuleName, 4, "invalid tx hash")
 	ErrAlreadySwapped     = sdkerrors.Register(ModuleName, 5, "already swapped tx hash")
+	ErrSwapLimitExceed    = sdkerrors.Register(ModuleName, 6, "swap limitation has exceeded")
 )

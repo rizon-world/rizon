@@ -31,6 +31,12 @@ func (k msgServer) CreateTokenswap(goCtx context.Context, msg *types.MsgCreateTo
 		return nil, types.ErrUnswappable
 	}
 
+	// check swap limit has exceeded
+	swapTarget := k.Keeper.GetSwappedAmount(ctx) + msg.Amount.RoundInt64()
+	if k.Keeper.Limit(ctx) < swapTarget {
+		return nil, types.ErrSwapLimitExceed
+	}
+
 	// check authorized signer
 	// XXX should think about signer could be multi at future...
 	if k.Keeper.Signer(ctx) != msg.Signer {
@@ -48,7 +54,6 @@ func (k msgServer) CreateTokenswap(goCtx context.Context, msg *types.MsgCreateTo
 	}
 
 	// calculate the amount of coin
-	// TODO adjust denom multiplier hdac vs atolo
 	newCoin := sdk.NewCoins(sdk.NewCoin(rizon.DefaultDenom, msg.Amount.RoundInt()))
 	// prepare swap struct from message
 	newSwap := types.NewTokenswap(msg.TxHash, msg.Receiver, msg.Signer, newCoin)
