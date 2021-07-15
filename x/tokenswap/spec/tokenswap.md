@@ -98,5 +98,5 @@ type MsgCreateTokenswapRequest struct {
 | Key | Type | Example |
 | :--- | :--- | :--- |
 | Swappable | bool | true |
-| Signer | string | "rizon136fzkc73rm5def5fngs386qdlxcuvxvrte8lk7" |
+| Signer | string | "rizon1cafygu0kppg46tq9kkzz9z9nrf5v8zwwnf5t9l" |
 
