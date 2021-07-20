@@ -88,7 +88,7 @@ import (
 	rizonappparams "github.com/rizon-world/rizon/app/params"
 
 	// unnamed import of statik for swagger UI support
-	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
+	_ "github.com/rizon-world/rizon/client/docs/statik"
 
 	"github.com/rizon-world/rizon/x/tokenswap"
 	tokenswapkeeper "github.com/rizon-world/rizon/x/tokenswap/keeper"
