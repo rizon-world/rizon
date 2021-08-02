@@ -21958,9 +21958,58 @@ paths:
                   signer:
                     type: string
                     title: signer is someone who can request tokenswap
+                  limit:
+                    type: string
+                    format: int64
+                    title: limit is the maximum swappable amount
             title: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      tags:
+        - Query
+  /rizon/tokenswap/swapped:
+    get:
+      summary: SwappedAmount queries current swapped amount of tokenswap
+      operationId: SwappedAmount
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              swapped_amount:
+                title: amount defines current swapped amount of tokenswap
+                type: object
+                properties:
+                  amount:
+                    type: string
+                    format: int64
+                    title: amount is the amount of already swapped
+            title: >-
+              QuerySwappedAmountResponse is response type for the
+              Query/SwappedAmount RPC method
         default:
           description: An unexpected error response.
           schema:
@@ -38156,6 +38205,10 @@ definitions:
       signer:
         type: string
         title: signer is someone who can request tokenswap
+      limit:
+        type: string
+        format: int64
+        title: limit is the maximum swappable amount
     title: Params defines the parameters for the tokenswap module
   rizonworld.rizon.tokenswap.QueryParamsResponse:
     type: object
@@ -38170,7 +38223,25 @@ definitions:
           signer:
             type: string
             title: signer is someone who can request tokenswap
+          limit:
+            type: string
+            format: int64
+            title: limit is the maximum swappable amount
     title: QueryParamsResponse is response type for the Query/Params RPC method
+  rizonworld.rizon.tokenswap.QuerySwappedAmountResponse:
+    type: object
+    properties:
+      swapped_amount:
+        title: amount defines current swapped amount of tokenswap
+        type: object
+        properties:
+          amount:
+            type: string
+            format: int64
+            title: amount is the amount of already swapped
+    title: >-
+      QuerySwappedAmountResponse is response type for the Query/SwappedAmount
+      RPC method
   rizonworld.rizon.tokenswap.QueryTokenswapResponse:
     type: object
     properties:
@@ -38208,6 +38279,14 @@ definitions:
                 signatures required by gogoproto.
             title: amount is the amount of swap process
     title: QueryTokenswapResponse is response type for the Query/Tokenswap RPC method
+  rizonworld.rizon.tokenswap.SwappedAmount:
+    type: object
+    properties:
+      amount:
+        type: string
+        format: int64
+        title: amount is the amount of already swapped
+    title: Current swapped amount of tokenswap module
   rizonworld.rizon.tokenswap.Tokenswap:
     type: object
     properties:
