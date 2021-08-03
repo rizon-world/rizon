@@ -12,7 +12,7 @@ option go_package = "github.com/rizon-world/rizon/x/tokenswap/types";
 service Query {
   // Tokenswap queries tokenswap item for given tx hash
   rpc Tokenswap(QueryTokenswapRequest) returns (QueryTokenswapResponse) {
-    option (google.api.http).get = "/rizon/tokenswap/{tx_hash}";
+    option (google.api.http).get = "/rizon/tokenswap/tokenswaps/{tx_hash}";
   }
   // SwappedAmount queries current swapped amount of tokenswap
   rpc SwappedAmount(QuerySwappedAmountRequest) returns (QuerySwappedAmountResponse) {
