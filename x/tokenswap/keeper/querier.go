@@ -22,6 +22,9 @@ func NewQuerier(k Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 		case types.QueryTokenswap:
 			res, err = queryTokenswap(ctx, req, k, legacyQuerierCdc)
 
+		case types.QuerySwappedAmount:
+			res, err = querySwappedAmount(ctx, k, legacyQuerierCdc)
+
 		case types.QueryParams:
 			res, err = queryParams(ctx, k, legacyQuerierCdc)
 
@@ -51,6 +54,18 @@ func queryTokenswap(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuer
 	}
 
 	bz, err := codec.MarshalJSONIndent(legacyQuerierCdc, res)
+	if err != nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
+	}
+
+	return bz, nil
+}
+
+// query current swapped amount of tokenswap
+func querySwappedAmount(ctx sdk.Context, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	amt := k.GetSwappedAmount(ctx)
+
+	bz, err := codec.MarshalJSONIndent(legacyQuerierCdc, types.NewSwappedAmount(amt))
 	if err != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}

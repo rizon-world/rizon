@@ -24,6 +24,7 @@ func NewQueryCmd() *cobra.Command {
 
 	tokenswapQueryCmd.AddCommand(
 		GetCmdQuerySwap(),
+		GetCmdQuerySwappedAmount(),
 		GetCmdQueryParams(),
 	)
 
@@ -54,6 +55,33 @@ func GetCmdQuerySwap() *cobra.Command {
 			}
 
 			return clientCtx.PrintProto(res.Tokenswap)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+// GetCmdQuerySwappedAmount queries current swapped amount of tokenswap module
+func GetCmdQuerySwappedAmount() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "swapped-amount",
+		Args:  cobra.NoArgs,
+		Short: "Query current swapped amount of tokenswap",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			res, err := queryClient.SwappedAmount(context.Background(), &types.QuerySwappedAmountRequest{})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(&res.SwappedAmount)
 		},
 	}
 

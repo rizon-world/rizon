@@ -17,6 +17,7 @@ func RegisterHandlers(clientCtx client.Context, r *mux.Router) {
 
 func registerQueryRoutes(clientCtx client.Context, r *mux.Router) {
 	r.HandleFunc("/tokenswap/tokenswaps/{tx_hash}", getTokenswapHandler(clientCtx)).Methods("GET")
+	r.HandleFunc("/tokenswap/swapped", getSwappedAmountHandler(clientCtx)).Methods("GET")
 	r.HandleFunc("/tokenswap/parameters", getParamsHandler(clientCtx)).Methods("GET")
 
 }

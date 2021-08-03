@@ -13,4 +13,6 @@ message Params {
   bool swappable = 1 [(gogoproto.moretags) = "yaml:\"swappable\""];
   // signer is someone who can request tokenswap
   string signer  = 2 [(gogoproto.moretags) = "yaml:\"signer\""];
+  // limit is the maximum swappable amount
+  int64 limit    = 3 [(gogoproto.moretags) = "yaml:\"limit\""];
 }

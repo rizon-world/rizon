@@ -14,6 +14,10 @@ service Query {
   rpc Tokenswap(QueryTokenswapRequest) returns (QueryTokenswapResponse) {
     option (google.api.http).get = "/rizon/tokenswap/{tx_hash}";
   }
+  // SwappedAmount queries current swapped amount of tokenswap
+  rpc SwappedAmount(QuerySwappedAmountRequest) returns (QuerySwappedAmountResponse) {
+    option (google.api.http).get = "/rizon/tokenswap/swapped";
+  }
   // Params queries parameters of tokenswap
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/rizon/tokenswap/params";
@@ -30,6 +34,15 @@ message QueryTokenswapRequest {
 message QueryTokenswapResponse {
   // tokenswap defines the tokenswap info
   Tokenswap tokenswap = 1;
+}
+
+// QuerySwappedAmountRequest is request type for the Query/SwappedAmount RPC method
+message QuerySwappedAmountRequest {}
+
+// QuerySwappedAmountResponse is response type for the Query/SwappedAmount RPC method
+message QuerySwappedAmountResponse {
+  // amount defines current swapped amount of tokenswap
+  SwappedAmount swapped_amount = 1 [(gogoproto.nullable) = false];
 }
 
 // QueryParamsRequest is request type for the Query/Params RPC method

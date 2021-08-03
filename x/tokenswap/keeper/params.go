@@ -18,6 +18,12 @@ func (k *Keeper) Signer(ctx sdk.Context) (signer string) {
 	return
 }
 
+// Total returns maximum swappable amount
+func (k *Keeper) Limit(ctx sdk.Context) (limit int64) {
+	k.params.Get(ctx, types.KeyLimit, &limit)
+	return
+}
+
 func (k *Keeper) SetParams(ctx sdk.Context, params types.Params) {
 	k.params.SetParamSet(ctx, &params)
 }
@@ -26,5 +32,6 @@ func (k *Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
 		k.Swappable(ctx),
 		k.Signer(ctx),
+		k.Limit(ctx),
 	)
 }

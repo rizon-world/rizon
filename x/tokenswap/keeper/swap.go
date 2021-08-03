@@ -35,6 +35,10 @@ func (k Keeper) Swap(ctx sdk.Context, swap types.Tokenswap) error {
 
 	// store swap item
 	k.SetSwap(ctx, swap)
+	// update swapped amount
+	amt := k.GetSwappedAmount(ctx)
+	amt += swap.Amount[0].Amount.Int64()
+	k.SetSwappedAmount(ctx, types.NewSwappedAmount(amt))
 
 	return nil
 }
@@ -60,4 +64,22 @@ func (k Keeper) SetSwap(ctx sdk.Context, swap types.Tokenswap) {
 	store := k.Store(ctx)
 
 	store.Set([]byte(swap.TxHash), k.cdc.MustMarshalBinaryBare(&swap))
+}
+
+// SetSwappedAmount updates current tokenswap amount
+func (k Keeper) SetSwappedAmount(ctx sdk.Context, amt types.SwappedAmount) {
+	store := k.Store(ctx)
+
+	store.Set([]byte(types.KeySwappedAmount), k.cdc.MustMarshalBinaryBare(&amt))
+}
+
+// GetSwappedAmount returns current tokenswap amount
+func (k Keeper) GetSwappedAmount(ctx sdk.Context) int64 {
+	store := k.Store(ctx)
+
+	var amt types.SwappedAmount
+	bz := store.Get(types.KeySwappedAmount)
+	k.cdc.UnmarshalBinaryBare(bz, &amt)
+
+	return amt.Amount
 }

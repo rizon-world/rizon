@@ -14,11 +14,14 @@ const (
 	DefaultSwappable = true
 	// who can request tokenswap
 	DefaultSigner = "rizon136fzkc73rm5def5fngs386qdlxcuvxvrte8lk7"
+	// tokenswap amount limitation
+	DefaultLimit = SwapLimitation
 )
 
 var (
 	KeySwappable = []byte("Swappable")
 	KeySigner    = []byte("Signer")
+	KeyLimit     = []byte("Limit")
 )
 
 var (
@@ -26,10 +29,11 @@ var (
 )
 
 // NewParams creates a new Params instance
-func NewParams(swappable bool, signer string) Params {
+func NewParams(swappable bool, signer string, limit int64) Params {
 	return Params{
 		Swappable: swappable,
 		Signer:    signer,
+		Limit:     limit,
 	}
 }
 
@@ -38,6 +42,7 @@ func DefaultParams() Params {
 	return Params{
 		Swappable: DefaultSwappable,
 		Signer:    DefaultSigner,
+		Limit:     DefaultLimit,
 	}
 }
 
@@ -46,6 +51,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeySwappable, &p.Swappable, validateSwappable),
 		paramtypes.NewParamSetPair(KeySigner, &p.Signer, validateSigner),
+		paramtypes.NewParamSetPair(KeyLimit, &p.Limit, validateLimit),
 	}
 }
 
@@ -67,6 +73,10 @@ func (p *Params) Validate() error {
 	}
 
 	if err := validateSigner(p.Signer); err != nil {
+		return err
+	}
+
+	if err := validateLimit(p.Limit); err != nil {
 		return err
 	}
 
@@ -97,6 +107,15 @@ func validateSigner(i interface{}) error {
 
 	if signer == nil || signer.Empty() {
 		return fmt.Errorf("signer should not nil or empty")
+	}
+	return nil
+}
+
+// validate limit
+func validateLimit(i interface{}) error {
+	_, ok := i.(int64)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
 	}
 	return nil
 }

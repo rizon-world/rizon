@@ -2,8 +2,9 @@ package types
 
 // query endpoints supported by the Querier
 const (
-	QueryTokenswap = "get"
-	QueryParams    = "parameters"
+	QueryTokenswap     = "get"
+	QuerySwappedAmount = "swapped"
+	QueryParams        = "parameters"
 )
 
 // QueryTokenswapParam defines the param for the following query:

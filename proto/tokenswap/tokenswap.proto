@@ -19,3 +19,8 @@ message Tokenswap {
   repeated cosmos.base.v1beta1.Coin amount = 4 [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
 }
 
+// Current swapped amount of tokenswap module
+message SwappedAmount {
+  // amount is the amount of already swapped
+  int64 amount = 1 [(gogoproto.moretags) = "yaml:\"amount\""];
+}
