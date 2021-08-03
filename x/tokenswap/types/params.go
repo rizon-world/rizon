@@ -13,7 +13,7 @@ const (
 	// tokenswap module is enabled or not
 	DefaultSwappable = true
 	// who can request tokenswap
-	DefaultSigner = "rizon136fzkc73rm5def5fngs386qdlxcuvxvrte8lk7"
+	DefaultSigner = "rizon1cafygu0kppg46tq9kkzz9z9nrf5v8zwwnf5t9l"
 	// tokenswap amount limitation
 	DefaultLimit = SwapLimitation
 )
