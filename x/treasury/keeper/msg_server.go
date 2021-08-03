@@ -34,6 +34,9 @@ func (k msgServer) Mint(goCtx context.Context, msg *types.MsgMintRequest) (*type
 	if !k.Keeper.CurrencyMintable(ctx, msg.Amount.Denom) {
 		return nil, sdkerrors.Wrapf(types.ErrCurrencyUnmintable, "%s", msg.Amount.Denom)
 	}
+	if "uatolo" == msg.Amount.Denom {
+		return nil, sdkerrors.Wrapf(types.ErrCurrencyUnmintable, "%s", msg.Amount.Denom)
+	}
 
 	// check authorized signer
 	// XXX should think about signer could be multi at future...
