@@ -1,18 +1,22 @@
 package keeper_test
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	rizon "github.com/rizon-world/rizon/types"
-	"github.com/rizon-world/rizon/x/tokenswap/types"
-	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/require"
 	"testing"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+
+	rizon "github.com/rizon-world/rizon/app"
+	rizontypes "github.com/rizon-world/rizon/types"
+	"github.com/rizon-world/rizon/x/tokenswap/types"
 )
 
-func TestSwapSuite(t *testing.T) {
-	suite.Run(t, new(KeeperTestSuite))
-}
+func TestSwap(t *testing.T) {
+	app := rizon.Setup(false)
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	tokenswapKeeper := app.TokenswapKeeper
 
-func (suite *KeeperTestSuite) TestSwap() {
 	amount := sdk.NewDec(10)
 	msg := types.NewMsgCreateTokenswapRequest(
 		"1accecb6c80859478bbcf8fbc1bb04c2625efca9e79c050916f9fd318ca3e5d7",
@@ -20,13 +24,19 @@ func (suite *KeeperTestSuite) TestSwap() {
 		types.DefaultSigner,
 		amount,
 	)
-	newCoin := sdk.NewCoins(sdk.NewCoin(rizon.DefaultDenom, msg.Amount.RoundInt()))
+	newCoin := sdk.NewCoins(sdk.NewCoin(rizontypes.DefaultDenom, msg.Amount.RoundInt()))
 	newSwap := types.NewTokenswap(msg.TxHash, msg.Receiver, msg.Signer, newCoin)
-	err := suite.keeper.Swap(suite.ctx, newSwap)
-	suite.Nil(err)
+	err := tokenswapKeeper.Swap(ctx, newSwap)
+	// If success, return nil
+	require.Nil(t, err)
 }
 
-func (suite *KeeperTestSuite) TestSwapFail() {
+// Receiver address should be an address of bech32 string
+func TestSwapFail(t *testing.T) {
+	app := rizon.Setup(false)
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	tokenswapKeeper := app.TokenswapKeeper
+
 	amount := sdk.NewDec(10)
 	msg := types.NewMsgCreateTokenswapRequest(
 		"1accecb6c80859478bbcf8fbc1bb04c2625efca9e79c050916f9fd318ca3e5d7",
@@ -34,8 +44,8 @@ func (suite *KeeperTestSuite) TestSwapFail() {
 		types.DefaultSigner,
 		amount,
 	)
-	newCoin := sdk.NewCoins(sdk.NewCoin(rizon.DefaultDenom, msg.Amount.RoundInt()))
+	newCoin := sdk.NewCoins(sdk.NewCoin(rizontypes.DefaultDenom, msg.Amount.RoundInt()))
 	newSwapReceiver := types.NewTokenswap(msg.TxHash, "msg.Receiver", msg.Signer, newCoin)
-	errReceiver := suite.keeper.Swap(suite.ctx, newSwapReceiver)
-	suite.NotNil(errReceiver)
+	errReceiver := tokenswapKeeper.Swap(ctx, newSwapReceiver)
+	require.NotNil(t, errReceiver)
 }

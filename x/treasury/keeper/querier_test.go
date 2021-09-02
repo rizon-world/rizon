@@ -1,54 +1,72 @@
 package keeper_test
 
 import (
+	rizon "github.com/rizon-world/rizon/app"
 	"github.com/rizon-world/rizon/x/treasury/keeper"
 	"github.com/rizon-world/rizon/x/treasury/types"
-	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"testing"
 )
 
-func TestQuerierSuite(t *testing.T) {
-	suite.Run(t, new(KeeperTestSuite))
-}
+func TestNewQuerier(t *testing.T) {
+	app := rizon.Setup(false)
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	treasuryKeeper := app.TreasuryKeeper
+	cdc := app.LegacyAmino()
 
-func (suite *KeeperTestSuite) TestNewQuerier() {
-	req := abci.RequestQuery {
+	req := abci.RequestQuery{
 		Path: "",
 		Data: []byte{},
 	}
-	querier := keeper.NewQuerier(suite.keeper, suite.legacycdc)
-	res, err := querier(suite.ctx, []string{"other"}, req)
-	suite.Error(err)
-	suite.Nil(res)
+	querier := keeper.NewQuerier(treasuryKeeper, cdc)
+	res, err := querier(ctx, []string{"other"}, req)
+	require.Error(t, err)
+	require.Nil(t, res)
 }
 
-func (suite *KeeperTestSuite) TestQueryCurrencies() {
-	querier := keeper.NewQuerier(suite.keeper, suite.legacycdc)
-	res, err := querier(suite.ctx, []string{types.QueryCurrencies}, abci.RequestQuery{})
-	suite.Nil(err)
+func TestQueryCurrencies(t *testing.T) {
+	app := rizon.Setup(false)
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	treasuryKeeper := app.TreasuryKeeper
+	cdc := app.LegacyAmino()
+
+	querier := keeper.NewQuerier(treasuryKeeper, cdc)
+	res, err := querier(ctx, []string{types.QueryCurrencies}, abci.RequestQuery{})
+	require.Nil(t, err)
 
 	var currencies types.Currencies
-	e := suite.legacycdc.UnmarshalJSON(res, currencies)
-	suite.Error(e)
+	e := cdc.UnmarshalJSON(res, currencies)
+	require.Error(t, e)
 }
 
-func (suite *KeeperTestSuite) TestQueryCurrency() {
-	querier := keeper.NewQuerier(suite.keeper, suite.legacycdc)
-	res, err := querier(suite.ctx, []string{types.QueryCurrency}, abci.RequestQuery{})
-	suite.Error(err)
+func TestQueryCurrency(t *testing.T) {
+	app := rizon.Setup(false)
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	treasuryKeeper := app.TreasuryKeeper
+	cdc := app.LegacyAmino()
+
+	querier := keeper.NewQuerier(treasuryKeeper, cdc)
+	res, err := querier(ctx, []string{types.QueryCurrency}, abci.RequestQuery{})
+	require.Error(t, err)
 
 	var param types.QueryCurrencyParam
-	e := suite.legacycdc.UnmarshalJSON(res, param)
-	suite.Error(e)
+	e := cdc.UnmarshalJSON(res, param)
+	require.Error(t, e)
 }
 
-func (suite *KeeperTestSuite) TestQueryParams() {
-	querier := keeper.NewQuerier(suite.keeper, suite.legacycdc)
-	res, err := querier(suite.ctx, []string{types.QueryParams}, abci.RequestQuery{})
-	suite.NoError(err)
+func TestQueryParams(t *testing.T) {
+	app := rizon.Setup(false)
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	treasuryKeeper := app.TreasuryKeeper
+	cdc := app.LegacyAmino()
+
+	querier := keeper.NewQuerier(treasuryKeeper, cdc)
+	res, err := querier(ctx, []string{types.QueryParams}, abci.RequestQuery{})
+	require.NoError(t, err)
 
 	var param types.Params
-	e := suite.legacycdc.UnmarshalJSON(res, param)
-	suite.Error(e)
+	e := cdc.UnmarshalJSON(res, param)
+	require.Error(t, e)
 }

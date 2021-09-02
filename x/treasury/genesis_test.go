@@ -2,36 +2,24 @@ package treasury_test
 
 import (
 	"encoding/json"
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/require"
+
 	rizon "github.com/rizon-world/rizon/app"
 	"github.com/rizon-world/rizon/x/treasury"
-	"github.com/rizon-world/rizon/x/treasury/keeper"
 	"github.com/rizon-world/rizon/x/treasury/types"
-	"github.com/stretchr/testify/suite"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"testing"
 )
 
-type TestSuite struct {
-	suite.Suite
-
-	cdc codec.JSONMarshaler
-	ctx sdk.Context
-	keeper keeper.Keeper
-	app *rizon.RizonApp
-}
-
-func (suite *TestSuite) SetupTest() {
+func TestExportGenesis(t *testing.T) {
 	app := rizon.Setup(false)
-	suite.cdc = codec.NewAminoCodec(app.LegacyAmino())
-	suite.ctx = app.BaseApp.NewContext(false, tmproto.Header{})
-	suite.keeper = app.TreasuryKeeper
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	treasuryKeeper := app.TreasuryKeeper
 
 	genesisState := types.DefaultGenesisState()
 	stateBytes, err := json.MarshalIndent(genesisState, "", "  ")
-	suite.NoError(err)
+	require.NoError(t, err)
 
 	// Initialize the chain
 	app.InitChain(
@@ -42,22 +30,19 @@ func (suite *TestSuite) SetupTest() {
 	)
 	app.Commit()
 
-	suite.app = app
-}
-
-func TestGenesisSuite(t *testing.T) {
-	suite.Run(t, new(TestSuite))
-}
-
-func (suite *TestSuite) TestExportGenesis() {
-	exportedGenesis := treasury.ExportGenesis(suite.ctx, suite.keeper)
+	exportedGenesis := treasury.ExportGenesis(ctx, treasuryKeeper)
 	defaultGenesis := types.DefaultGenesisState()
-	suite.Equal(exportedGenesis, defaultGenesis)
+	require.Equal(t, exportedGenesis, defaultGenesis)
 }
 
-func (suite *TestSuite) TestInitGenesis() {
-	treasury.InitGenesis(suite.ctx, suite.keeper, types.DefaultGenesisState())
+// After InitGenesis, "skrw" denom is set as Currency into KVStore
+func TestInitGenesis(t *testing.T) {
+	app := rizon.Setup(false)
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	treasuryKeeper := app.TreasuryKeeper
 
-	acc := suite.keeper.GetCurrency(suite.ctx, "skrw")
-	suite.Equal("skrw", acc.Denom)
+	treasury.InitGenesis(ctx, treasuryKeeper, types.DefaultGenesisState())
+
+	acc := treasuryKeeper.GetCurrency(ctx, "skrw")
+	require.Equal(t, "skrw", acc.Denom)
 }

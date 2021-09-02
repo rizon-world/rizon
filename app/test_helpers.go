@@ -12,6 +12,7 @@ import (
 )
 
 var SetConfigFlag = false
+
 func isConfigSet() bool {
 	return SetConfigFlag
 }
@@ -50,6 +51,7 @@ func setup(withGenesis bool, invCheckPeriod uint) (*RizonApp, GenesisState) {
 
 	db := dbm.NewMemDB()
 	encCdc := MakeEncodingConfig()
+	// A Nop logger is set in RizonApp.
 	app := NewRizonApp(log.NewNopLogger(),
 		db,
 		nil,
@@ -66,7 +68,7 @@ func setup(withGenesis bool, invCheckPeriod uint) (*RizonApp, GenesisState) {
 	return app, GenesisState{}
 }
 
-// Setup initializes a new RizonApp. A Nop logger is set in RizonApp.
+// Setup initializes a new RizonApp.
 func Setup(isCheckTx bool) *RizonApp {
 	app, genesisState := setup(!isCheckTx, 5)
 	if !isCheckTx {
@@ -78,10 +80,10 @@ func Setup(isCheckTx bool) *RizonApp {
 
 		// Initialize the chain
 		app.InitChain(abci.RequestInitChain{
-			Validators: []abci.ValidatorUpdate{},
+			Validators:      []abci.ValidatorUpdate{},
 			ConsensusParams: DefaultConsensusParams,
-			AppStateBytes: stateBytes,
-		}, )
+			AppStateBytes:   stateBytes,
+		})
 	}
 
 	return app

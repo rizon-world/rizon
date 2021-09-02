@@ -2,9 +2,10 @@ package rizon
 
 import (
 	"encoding/json"
-	"github.com/rizon-world/rizon/types"
 	"os"
 	"testing"
+
+	"github.com/rizon-world/rizon/types"
 
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -12,7 +13,7 @@ import (
 	dbm "github.com/tendermint/tm-db"
 )
 
-func TestRizonAppExportAndBlockedAddres(t *testing.T) {
+func TestRizonAppExportAndBlockedAddress(t *testing.T) {
 	types.SetConfig()
 
 	encCfg := MakeEncodingConfig()

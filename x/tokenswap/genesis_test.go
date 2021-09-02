@@ -1,39 +1,28 @@
 package tokenswap_test
 
 import (
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	rizon "github.com/rizon-world/rizon/app"
 	"github.com/rizon-world/rizon/x/tokenswap"
-	"github.com/rizon-world/rizon/x/tokenswap/keeper"
-	"github.com/rizon-world/rizon/x/tokenswap/types"
-	"github.com/stretchr/testify/suite"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"testing"
+
+	rizon "github.com/rizon-world/rizon/app"
+	"github.com/rizon-world/rizon/x/tokenswap/types"
+	"github.com/stretchr/testify/require"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
-type TestSuite struct {
-	suite.Suite
-
-	cdc codec.JSONMarshaler
-	ctx sdk.Context
-	keeper keeper.Keeper
-}
-
-func (suite *TestSuite) SetupTest() {
+// After InitGenesis, Default Limit, Signer, Swappable config is correctly set in param
+func TestExportGenesis(t *testing.T) {
 	app := rizon.Setup(false)
-	suite.cdc = codec.NewAminoCodec(app.LegacyAmino())
-	suite.ctx = app.BaseApp.NewContext(false, tmproto.Header{})
-	suite.keeper = app.TokenswapKeeper
-}
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	keeper := app.TokenswapKeeper
 
-func TestGenesisSuite(t *testing.T) {
-	suite.Run(t, new(TestSuite))
-}
-
-func (suite *TestSuite) TestExportGenesis() {
-	exportedGenesis := tokenswap.ExportGenesis(suite.ctx, suite.keeper)
+	exportedGenesis := tokenswap.ExportGenesis(ctx, keeper)
 	defaultGenesis := types.DefaultGenesisState()
-	suite.Equal(exportedGenesis, defaultGenesis)
-}
 
+	// In param struct, limit uses int64 type
+	var expectedLimit int64 = types.DefaultLimit
+	require.Equal(t, exportedGenesis, defaultGenesis)
+	require.Equal(t, expectedLimit, exportedGenesis.GetParams().Limit)
+	require.Equal(t, types.DefaultSigner, exportedGenesis.GetParams().Signer)
+	require.Equal(t, types.DefaultSwappable, exportedGenesis.GetParams().Swappable)
+}

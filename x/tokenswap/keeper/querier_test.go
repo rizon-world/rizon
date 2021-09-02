@@ -1,44 +1,57 @@
 package keeper_test
 
 import (
+	rizon "github.com/rizon-world/rizon/app"
 	"github.com/rizon-world/rizon/x/tokenswap/keeper"
 	"github.com/rizon-world/rizon/x/tokenswap/types"
-	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"testing"
 )
 
-func TestQuerierSuite(t *testing.T) {
-	suite.Run(t, new(KeeperTestSuite))
-}
+func TestNewQuerier(t *testing.T) {
+	app := rizon.Setup(false)
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	tokenswapKeeper := app.TokenswapKeeper
+	cdc := app.LegacyAmino()
 
-func (suite *KeeperTestSuite) TestNewQuerier() {
-	req := abci.RequestQuery {
+	req := abci.RequestQuery{
 		Path: "",
 		Data: []byte{},
 	}
-	querier := keeper.NewQuerier(suite.keeper, suite.cdc)
-	res, err := querier(suite.ctx, []string{"other"}, req)
-	suite.Error(err)
-	suite.Nil(res)
+	querier := keeper.NewQuerier(tokenswapKeeper, cdc)
+	res, err := querier(ctx, []string{"other"}, req)
+	require.Error(t, err)
+	require.Nil(t, res)
 }
 
-func (suite *KeeperTestSuite) TestqueryTokenswap() {
-	querier := keeper.NewQuerier(suite.keeper, suite.cdc)
-	res, err := querier(suite.ctx, []string{types.QueryTokenswap}, abci.RequestQuery{})
-	suite.Error(err)
+func TestQueryTokenswap(t *testing.T) {
+	app := rizon.Setup(false)
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	tokenswapKeeper := app.TokenswapKeeper
+	cdc := app.LegacyAmino()
+
+	querier := keeper.NewQuerier(tokenswapKeeper, cdc)
+	res, err := querier(ctx, []string{types.QueryTokenswap}, abci.RequestQuery{})
+	require.Error(t, err)
 
 	var swap types.Tokenswap
-	e := suite.cdc.UnmarshalJSON(res, swap)
-	suite.Error(e)
+	e := cdc.UnmarshalJSON(res, swap)
+	require.Error(t, e)
 }
 
-func (suite *KeeperTestSuite) TestqueryParams() {
-	querier := keeper.NewQuerier(suite.keeper, suite.cdc)
-	res, err := querier(suite.ctx, []string{types.QueryParams}, abci.RequestQuery{})
-	suite.NoError(err)
+func TestQueryParams(t *testing.T) {
+	app := rizon.Setup(false)
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	tokenswapKeeper := app.TokenswapKeeper
+	cdc := app.LegacyAmino()
+
+	querier := keeper.NewQuerier(tokenswapKeeper, cdc)
+	res, err := querier(ctx, []string{types.QueryParams}, abci.RequestQuery{})
+	require.NoError(t, err)
 
 	var param types.Params
-	e := suite.cdc.UnmarshalJSON(res, param)
-	suite.Error(e)
+	e := cdc.UnmarshalJSON(res, param)
+	require.Error(t, e)
 }

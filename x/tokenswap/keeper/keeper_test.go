@@ -1,38 +1,20 @@
 package keeper_test
 
 import (
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	rizon "github.com/rizon-world/rizon/app"
-	"github.com/rizon-world/rizon/x/tokenswap/keeper"
-	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/require"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"testing"
 )
 
-type KeeperTestSuite struct {
-	suite.Suite
-
-	cdc		*codec.LegacyAmino
-	ctx 	sdk.Context
-	keeper 	keeper.Keeper
-	app 	*rizon.RizonApp
-}
-
-func (suite *KeeperTestSuite) SetupTest() {
+func TestStore(t *testing.T) {
 	app := rizon.Setup(false)
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	keeper := app.TokenswapKeeper
+	accStore := keeper.Store(ctx)
+	accLogger := keeper.Logger(ctx)
 
-	suite.app = app
-	suite.cdc = app.LegacyAmino()
-	suite.ctx = app.BaseApp.NewContext(false, tmproto.Header{})
-	suite.keeper = app.TokenswapKeeper
-}
-
-func TestKeeperTestSuite(t *testing.T) {
-	suite.Run(t, new(KeeperTestSuite))
-}
-
-func (suite *KeeperTestSuite) TestStore() {
-	acc := suite.keeper.Store(suite.ctx)
-	suite.NotNil(acc)
+	require.NotNil(t, accStore)
+	// When rizon daemon is started, the logger is empty instance.
+	require.NotNil(t, accLogger)
 }

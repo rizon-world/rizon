@@ -9,21 +9,22 @@ import (
 )
 
 var (
-	tx_hash = "84aa2e585705d40173c67e9ccbf4c71ab39984f7477e160a276252fd7d0b2f74"
-	receiver = "rizon1alhgwh8cex84aacc62xxh3yslq4wgprgnhtsvc"
-	signer = "rizon146a27r6mcx8qg8sl78ue49na3hk26un899yd4l"
-	amount = sdk.NewDec(1000)
-	pAmount *sdk.Dec = &amount
+	tx_hash           = "84aa2e585705d40173c67e9ccbf4c71ab39984f7477e160a276252fd7d0b2f74"
+	receiver          = "rizon1alhgwh8cex84aacc62xxh3yslq4wgprgnhtsvc"
+	signer            = "rizon146a27r6mcx8qg8sl78ue49na3hk26un899yd4l"
+	amount            = sdk.NewDec(1000)
+	pAmount  *sdk.Dec = &amount
 
-	invalid_tx_hash = "84aa2e585705d40173c67e9ccbf4c71ab39984f7477e160a276252fd7d"
+	invalid_tx_hash  = "84aa2e585705d40173c67e9ccbf4c71ab39984f7477e160a276252fd7d"
 	invalid_receiver = "hdac1alhgwh8cex84aacc62xxh3yslq4wgprgnhtsvc"
-	invalid_signer = "hdac1alhgwh8cex84aacc62xxh3yslq4wgprgnhtsvc"
+	invalid_signer   = "hdac1alhgwh8cex84aacc62xxh3yslq4wgprgnhtsvc"
 )
 
 func init() {
 	rizon.SetRizonConfig()
 }
 
+// MsgCreateTokenswapRequest Test
 func TestNewMsgCreateTokenswapRequest(t *testing.T) {
 	msg := types.NewMsgCreateTokenswapRequest(tx_hash, receiver, signer, amount)
 	require.Equal(t, tx_hash, msg.TxHash)
@@ -59,9 +60,9 @@ func TestMsgCreateTokenswapRequest_GetSigners(t *testing.T) {
 
 func TestMsgCreateTokenswapRequest_ValidateBasic(t *testing.T) {
 	tests := []struct {
-		name 		string
-		expectPass	bool
-		msg 		*types.MsgCreateTokenswapRequest
+		name       string
+		expectPass bool
+		msg        *types.MsgCreateTokenswapRequest
 	}{
 		{"pass", true, types.NewMsgCreateTokenswapRequest(tx_hash, receiver, signer, amount)},
 		{"invalid hash", false, types.NewMsgCreateTokenswapRequest(invalid_tx_hash, receiver, signer, amount)},
@@ -70,7 +71,7 @@ func TestMsgCreateTokenswapRequest_ValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T){
+		t.Run(tc.name, func(t *testing.T) {
 			err := tc.msg.ValidateBasic()
 			if tc.expectPass {
 				require.NoError(t, err)

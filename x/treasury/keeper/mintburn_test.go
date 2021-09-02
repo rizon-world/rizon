@@ -1,80 +1,64 @@
 package keeper_test
 
 import (
-	"encoding/json"
-	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	rizon "github.com/rizon-world/rizon/app"
-	"github.com/rizon-world/rizon/x/treasury/keeper"
 	"github.com/rizon-world/rizon/x/treasury/types"
-	"github.com/stretchr/testify/suite"
-	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/stretchr/testify/require"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"testing"
 )
 
-type KeeperTestSuite struct {
-	suite.Suite
-
-	cdc 		codec.JSONMarshaler
-	legacycdc 	*codec.LegacyAmino
-	ctx 		sdk.Context
-	keeper 		keeper.Keeper
-	app 		*rizon.RizonApp
-}
-
-func (suite *KeeperTestSuite) SetupTest() {
+func TestMint(t *testing.T) {
 	app := rizon.Setup(false)
-	suite.cdc = codec.NewAminoCodec(app.LegacyAmino())
-	suite.legacycdc = app.LegacyAmino()
-	suite.ctx = app.BaseApp.NewContext(false, tmproto.Header{})
-	suite.keeper = app.TreasuryKeeper
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	treasuryKeeper := app.TreasuryKeeper
+	bankKeeper := app.BankKeeper
 
-	genesisState := types.DefaultGenesisState()
-	stateBytes, err := json.MarshalIndent(genesisState, "", "  ")
-	suite.NoError(err)
-
-	// Initialize the chain
-	app.InitChain(
-		abci.RequestInitChain{
-			Validators:    []abci.ValidatorUpdate{},
-			AppStateBytes: stateBytes,
-		},
-	)
-	app.Commit()
-
-	suite.app = app
-}
-
-func TestMintBurnSuite(t *testing.T) {
-	suite.Run(t, new(KeeperTestSuite))
-}
-
-func (suite *KeeperTestSuite) TestMint() {
 	coin, errCoin := sdk.ParseCoinNormalized("40rizon")
-	suite.Nil(errCoin)
+	require.Nil(t, errCoin)
+
 	msg := types.NewMsgMintRequest(
 		"rizon19hydu78c6wrwalr0g4gkdgv4glpt4j0hflc29s",
 		"rizon148xe53d4438sr084ehf8xz30x4xm65x3yxpy6t",
 		coin,
-		)
-	err := suite.keeper.Mint(suite.ctx, msg.Receiver, msg.Amount)
-	suite.Nil(err)
+	)
+	err := treasuryKeeper.Mint(ctx, msg.Receiver, msg.Amount)
+	require.Nil(t, err)
+
+	// If mint is success, bankKeeper give a "40rizon" as a reuslt of getbalance.
+	mintedAddr, err := sdk.AccAddressFromBech32("rizon19hydu78c6wrwalr0g4gkdgv4glpt4j0hflc29s")
+	require.Nil(t, err, "String type bech32 address should be changed AccAddress type.")
+	accBalance := bankKeeper.GetBalance(ctx, mintedAddr, coin.Denom)
+	require.Equal(t, "40rizon", accBalance.String())
 }
 
-func (suite *KeeperTestSuite) TestBurn() {
+func TestBurn(t *testing.T) {
+	app := rizon.Setup(false)
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	treasuryKeeper := app.TreasuryKeeper
+	bankKeeper := app.BankKeeper
+
 	coin, errCoin := sdk.ParseCoinNormalized("40rizon")
-	suite.Nil(errCoin)
+	require.Nil(t, errCoin)
+
 	msgMint := types.NewMsgMintRequest(
 		"rizon19hydu78c6wrwalr0g4gkdgv4glpt4j0hflc29s",
 		"rizon148xe53d4438sr084ehf8xz30x4xm65x3yxpy6t",
 		coin,
 	)
-	suite.keeper.Mint(suite.ctx, msgMint.Receiver, msgMint.Amount)
+
+	treasuryKeeper.Mint(ctx, msgMint.Receiver, msgMint.Amount)
 	msg := types.NewMsgBurnRequest(
 		"rizon19hydu78c6wrwalr0g4gkdgv4glpt4j0hflc29s",
 		coin,
-		)
-	err := suite.keeper.Burn(suite.ctx, msg.Signer, msg.Amount)
-	suite.Nil(err)
+	)
+	err := treasuryKeeper.Burn(ctx, msg.Signer, msg.Amount)
+	require.Nil(t, err)
+
+	// If burn is success, bankKeeper give a "0rizon" as a reuslt of getbalance.
+	burnedAddr, err := sdk.AccAddressFromBech32("rizon19hydu78c6wrwalr0g4gkdgv4glpt4j0hflc29s")
+	require.Nil(t, err, "String type bech32 address should be changed AccAddress type.")
+	accBalance := bankKeeper.GetBalance(ctx, burnedAddr, coin.Denom)
+	require.Equal(t, "0rizon", accBalance.String())
 }
