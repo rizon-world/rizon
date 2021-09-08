@@ -17,6 +17,13 @@ func NewCurrencies(denoms []string) Currencies {
 	}
 }
 
+// NewMaxAtoloSupply creates a new max atolo supply
+func NewMaxAtoloSupply(amount int64) MaxAtoloSupply {
+	return MaxAtoloSupply{
+		Amount: amount,
+	}
+}
+
 // NewSequence creates new sequence
 func NewSequence(number int64) Sequence {
 	return Sequence{

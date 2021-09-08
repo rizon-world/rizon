@@ -19,6 +19,10 @@ service Query {
   rpc Currency(QueryCurrencyRequest) returns (QueryCurrencyResponse) {
     option (google.api.http).get = "/rizon/treasury/currencies/{denom}";
   }
+  // Max queries maximum mintable amount of uatolo
+  rpc MaxAtoloSupply(QueryMaxRequest) returns (QueryMaxResponse) {
+    option (google.api.http).get = "/rizon/treasury/max_atolo";
+  }
   // Params queries parameters of treasury
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/rizon/treasury/params";
@@ -50,6 +54,15 @@ message QueryCurrencyRequest {
 message QueryCurrencyResponse {
   // Currency defines a currency info
   Currency currency = 1;
+}
+
+// QueryMaxRequest is request type for the Query/MaxAtoloSupply RPC method
+message QueryMaxRequest {}
+
+// QueryMaxResponse is response type for the Query/MaxAtoloSupply RPC method
+message QueryMaxResponse {
+  // params defines maximum mintable amount of uatolo
+  MaxAtoloSupply max_atolo_supply = 1 [(gogoproto.nullable) = false];
 }
 
 // QueryParamsRequest is request type for the Query/Params RPC method
