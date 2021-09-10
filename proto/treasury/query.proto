@@ -19,7 +19,7 @@ service Query {
   rpc Currency(QueryCurrencyRequest) returns (QueryCurrencyResponse) {
     option (google.api.http).get = "/rizon/treasury/currencies/{denom}";
   }
-  // Max queries maximum mintable amount of uatolo
+  // MaxAtoloSupply queries maximum mintable amount of uatolo
   rpc MaxAtoloSupply(QueryMaxRequest) returns (QueryMaxResponse) {
     option (google.api.http).get = "/rizon/treasury/max_atolo";
   }
