@@ -1,7 +1,7 @@
 # RIZON PLATFORM
 
 [![license](https://img.shields.io/github/license/rizon-world/rizon.svg)](https://github.com/rizon-world/rizon/blob/master/LICENSE)
-[![report](https://goreportcard.com/report/github.com/rizon-world/rizon)](https://goreportcard.com/report/github.com/rizon-world/rizon)
+[![report](https://goreportcard.com/badge/github.com/rizon-world/rizon)](https://goreportcard.com/report/github.com/rizon-world/rizon)
 
 Welcome to the official RIZON PLATFORM repository.
 RIZON is a decentralized network program which helps you to connect other blockchain and build your own network easily.
