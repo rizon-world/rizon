@@ -97,6 +97,8 @@ import (
 	"github.com/rizon-world/rizon/x/treasury"
 	treasurykeeper "github.com/rizon-world/rizon/x/treasury/keeper"
 	treasurytypes "github.com/rizon-world/rizon/x/treasury/types"
+
+	rizonmint "github.com/rizon-world/rizon/x/mint"
 )
 
 const appName = "RizonApp"
@@ -348,7 +350,7 @@ func NewRizonApp(
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
 		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
-		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper),
+		rizonmint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),

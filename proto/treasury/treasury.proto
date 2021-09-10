@@ -23,6 +23,12 @@ message Currencies {
   repeated string denoms = 1 [(gogoproto.moretags) = "yaml:\"denoms\""];
 }
 
+// Maximum mintable amount of atolo
+message MaxAtoloSupply {
+  // amount is maximum mintable amount of atolo
+  int64 amount = 1 [(gogoproto.moretags) = "yaml:\"amount\""];
+}
+
 // Sequence
 message Sequence {
   // number is the currency sequence number of current state
