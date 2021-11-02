@@ -25,7 +25,7 @@ func (k Querier) Currencies(c context.Context, req *types.QueryCurrenciesRequest
 	ctx := sdk.UnwrapSDKContext(c)
 
 	store := k.Keeper.Store(ctx)
-	currencyStore := prefix.NewStore(store, types.PrefixCurrency)
+	currencyStore := prefix.NewStore(store, types.CurrencyPrefix)
 	var denoms []string
 
 	pageRes, err := query.Paginate(currencyStore, req.Pagination, func(_, value []byte) error {
