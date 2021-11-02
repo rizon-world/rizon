@@ -70,7 +70,7 @@ func (k Keeper) SetSwap(ctx sdk.Context, swap types.Tokenswap) {
 func (k Keeper) SetSwappedAmount(ctx sdk.Context, amt types.SwappedAmount) {
 	store := k.Store(ctx)
 
-	store.Set([]byte(types.SwappedAmountKey), k.cdc.MustMarshal(&amt))
+	store.Set(types.SwappedAmountKey, k.cdc.MustMarshal(&amt))
 }
 
 // GetSwappedAmount returns current tokenswap amount

@@ -25,7 +25,7 @@ func (k Keeper) Owner(ctx sdk.Context, denom string) string {
 func (k Keeper) SetCurrencies(ctx sdk.Context, currencies types.Currencies) {
 	store := k.Store(ctx)
 
-	store.Set([]byte(types.CurrenciesKey), k.cdc.MustMarshal(&currencies))
+	store.Set(types.CurrenciesKey, k.cdc.MustMarshal(&currencies))
 }
 
 // GetCurrencies returns all supported currency denom list
@@ -76,7 +76,7 @@ func (k Keeper) GetCurrency(ctx sdk.Context, denom string) types.Currency {
 func (k Keeper) SetSequence(ctx sdk.Context, seq types.Sequence) {
 	store := k.Store(ctx)
 
-	store.Set([]byte(types.SequenceKey), k.cdc.MustMarshal(&seq))
+	store.Set(types.SequenceKey, k.cdc.MustMarshal(&seq))
 }
 
 // GetSequence returns a sequence number of current state
