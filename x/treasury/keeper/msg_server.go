@@ -6,6 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
+	rizon "github.com/rizon-world/rizon/types"
 	"github.com/rizon-world/rizon/x/treasury/types"
 )
 
@@ -34,7 +35,7 @@ func (k msgServer) Mint(goCtx context.Context, msg *types.MsgMintRequest) (*type
 	if !k.Keeper.CurrencyMintable(ctx, msg.Amount.Denom) {
 		return nil, sdkerrors.Wrapf(types.ErrCurrencyUnmintable, "%s", msg.Amount.Denom)
 	}
-	if "uatolo" == msg.Amount.Denom {
+	if rizon.DefaultDenom == msg.Amount.Denom {
 		return nil, sdkerrors.Wrapf(types.ErrCurrencyUnmintable, "%s", msg.Amount.Denom)
 	}
 
