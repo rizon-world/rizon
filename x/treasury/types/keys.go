@@ -16,12 +16,12 @@ const (
 
 var (
 	// global key of currency's denom list
-	KeyCurrencies = []byte{0x11}
+	CurrenciesKey = []byte{0x11}
 	// global key of currency state sequence
-	KeySequence = []byte{0x12}
+	SequenceKey = []byte{0x12}
 )
 
 var (
 	// prefix for single currency key
-	PrefixCurrency = []byte{0x21}
+	CurrencyPrefix = []byte{0x21}
 )
