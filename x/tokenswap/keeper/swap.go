@@ -79,7 +79,7 @@ func (k Keeper) GetSwappedAmount(ctx sdk.Context) int64 {
 
 	var amt types.SwappedAmount
 	bz := store.Get(types.KeySwappedAmount)
-	k.cdc.Unmarshal(bz, &amt)
+	k.cdc.MustUnmarshal(bz, &amt)
 
 	return amt.Amount
 }
