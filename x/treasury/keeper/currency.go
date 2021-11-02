@@ -35,7 +35,7 @@ func (k Keeper) GetCurrencies(ctx sdk.Context) types.Currencies {
 	bz := store.Get(types.KeyCurrencies)
 
 	var currencies types.Currencies
-	k.cdc.UnmarshalBinaryBare(bz, &currencies)
+	k.cdc.MustUnmarshalBinaryBare(bz, &currencies)
 
 	return currencies
 }
@@ -67,7 +67,7 @@ func (k Keeper) GetCurrency(ctx sdk.Context, denom string) types.Currency {
 
 	var currency types.Currency
 	bz := currencyStore.Get([]byte(denom))
-	k.cdc.UnmarshalBinaryBare(bz, &currency)
+	k.cdc.MustUnmarshalBinaryBare(bz, &currency)
 
 	return currency
 }
@@ -85,7 +85,7 @@ func (k Keeper) GetSequence(ctx sdk.Context) int64 {
 
 	var seq types.Sequence
 	bz := store.Get(types.KeySequence)
-	k.cdc.UnmarshalBinaryBare(bz, &seq)
+	k.cdc.MustUnmarshalBinaryBare(bz, &seq)
 
 	return seq.Number
 }
