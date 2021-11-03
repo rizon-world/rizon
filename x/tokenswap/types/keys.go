@@ -18,3 +18,8 @@ var (
 	// global key of current swapped amount
 	SwappedAmountKey = []byte{0x11}
 )
+
+// get the key for the swap from tx hash string
+func GetSwapKey(txHash string) []byte {
+	return []byte(txHash)
+}

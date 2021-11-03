@@ -56,8 +56,9 @@ func (k Keeper) ClearCurrencies(ctx sdk.Context) {
 func (k Keeper) SetCurrency(ctx sdk.Context, currency types.Currency) {
 	store := k.Store(ctx)
 	currencyStore := prefix.NewStore(store, types.CurrencyPrefix)
+	key := types.GetCurrencyKey(currency.Denom)
 
-	currencyStore.Set([]byte(currency.Denom), k.cdc.MustMarshal(&currency))
+	currencyStore.Set(key, k.cdc.MustMarshal(&currency))
 }
 
 // GetCurrency returns an information of a currency
@@ -66,7 +67,8 @@ func (k Keeper) GetCurrency(ctx sdk.Context, denom string) types.Currency {
 	currencyStore := prefix.NewStore(store, types.CurrencyPrefix)
 
 	var currency types.Currency
-	bz := currencyStore.Get([]byte(denom))
+	key := types.GetCurrencyKey(denom)
+	bz := currencyStore.Get(key)
 	k.cdc.MustUnmarshal(bz, &currency)
 
 	return currency

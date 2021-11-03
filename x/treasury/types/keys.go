@@ -25,3 +25,8 @@ var (
 	// prefix for single currency key
 	CurrencyPrefix = []byte{0x21}
 )
+
+// get the key for the currency from denom string
+func GetCurrencyKey(denom string) []byte {
+	return []byte(denom)
+}
