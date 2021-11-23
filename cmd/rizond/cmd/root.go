@@ -86,6 +86,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		genutilcli.ValidateGenesisCmd(rizon.ModuleBasics),
 		AddGenesisAccountCmd(rizon.DefaultNodeHome),
 		tmcli.NewCompletionCmd(rootCmd, true),
+		testnetCmd(rizon.ModuleBasics, banktypes.GenesisBalancesIterator{}),
 		debug.Cmd(),
 		config.Cmd(),
 	)

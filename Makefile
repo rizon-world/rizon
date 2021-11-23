@@ -55,8 +55,15 @@ update-swagger-docs: statik
         echo "\033[92mSwagger docs are in sync\033[0m";\
     fi
 
-install: go.sum
-	go install -mod=readonly $(BUILD_FLAGS) ./cmd/rizond
+build: BUILD_ARGS=-o $(CURDIR)/build/
+
+BUILD_TARGETS := build install
+
+$(BUILD_TARGETS): go.sum
+	go $@ -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) ./cmd/rizond
+
+build-linux: go.sum
+	LEDGER_ENABLED=false GOOS=linux GOARCH=amd64 $(MAKE) build
 
 go.sum: go.mod
 	@go mod verify
@@ -64,3 +71,19 @@ go.sum: go.mod
 
 protocgen:
 	bash ./scripts/protocgen.sh
+
+###############################################################################
+###                                Localnet                                 ###
+###############################################################################
+build-docker-rizon:
+	$(MAKE) -C networks/local
+
+# Run a 4-node testnet locally
+localnet-start: build-linux localnet-stop
+	@if ! [ -f build/node0/rizond/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build:/rizond:Z rizon-world/rizon-node testnet --v 4 -o . --starting-ip-address 192.168.10.2 --keyring-backend=test ; fi
+	docker-compose up -d
+
+localnet-stop:
+	docker-compose down
+
+.PHONY: build-docker-rizon localnet-start localnet-stop
