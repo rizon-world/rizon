@@ -48,7 +48,7 @@ func (k Keeper) GetSwap(ctx sdk.Context, txHash string) (swap types.Tokenswap, e
 	store := k.Store(ctx)
 
 	value := store.Get([]byte(txHash))
-	err = k.cdc.UnmarshalBinaryBare(value, &swap)
+	err = k.cdc.Unmarshal(value, &swap)
 
 	return swap, err
 }
@@ -63,14 +63,14 @@ func (k *Keeper) AlreadySwapped(ctx sdk.Context, txHash string) bool {
 func (k Keeper) SetSwap(ctx sdk.Context, swap types.Tokenswap) {
 	store := k.Store(ctx)
 
-	store.Set([]byte(swap.TxHash), k.cdc.MustMarshalBinaryBare(&swap))
+	store.Set([]byte(swap.TxHash), k.cdc.MustMarshal(&swap))
 }
 
 // SetSwappedAmount updates current tokenswap amount
 func (k Keeper) SetSwappedAmount(ctx sdk.Context, amt types.SwappedAmount) {
 	store := k.Store(ctx)
 
-	store.Set([]byte(types.KeySwappedAmount), k.cdc.MustMarshalBinaryBare(&amt))
+	store.Set([]byte(types.KeySwappedAmount), k.cdc.MustMarshal(&amt))
 }
 
 // GetSwappedAmount returns current tokenswap amount
@@ -79,7 +79,7 @@ func (k Keeper) GetSwappedAmount(ctx sdk.Context) int64 {
 
 	var amt types.SwappedAmount
 	bz := store.Get(types.KeySwappedAmount)
-	k.cdc.UnmarshalBinaryBare(bz, &amt)
+	k.cdc.Unmarshal(bz, &amt)
 
 	return amt.Amount
 }

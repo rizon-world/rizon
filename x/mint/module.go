@@ -25,7 +25,10 @@ type AppModule struct {
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(cdc codec.Marshaler, keeper keeper.Keeper, ak types.AccountKeeper) AppModule {
+func NewAppModule(
+	cdc codec.Codec,
+	keeper keeper.Keeper,
+	ak types.AccountKeeper) AppModule {
 	return AppModule{
 		AppModule:  mint.NewAppModule(cdc, keeper, ak),
 		keeper:     keeper,
