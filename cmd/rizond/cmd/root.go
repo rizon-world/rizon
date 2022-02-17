@@ -55,13 +55,8 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 		Use:   "rizond",
 		Short: "Rizon Blockchain App",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-			//initClientCtx = client.ReadHomeFlag(initClientCtx, cmd)
-			initClientCtx, err := client.ReadPersistentCommandFlags(initClientCtx, cmd.Flags())
-			if err != nil {
-				return err
-			}
-
-			initClientCtx, err = config.ReadFromClientConfig(initClientCtx)
+			initClientCtx = client.ReadHomeFlag(initClientCtx, cmd)
+			initClientCtx, err := config.ReadFromClientConfig(initClientCtx)
 			if err != nil {
 				return err
 			}
@@ -80,6 +75,8 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 }
 
 func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
+	cfg := sdk.GetConfig()
+	cfg.Seal()
 
 	rootCmd.AddCommand(
 		genutilcli.InitCmd(rizon.ModuleBasics, rizon.DefaultNodeHome),
@@ -95,7 +92,6 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 	ac := appCreator{
 		encCfg: encodingConfig,
 	}
-
 	server.AddCommands(rootCmd, rizon.DefaultNodeHome, ac.newApp, ac.appExport, addModuleInitFlags)
 
 	// add keybase, auxiliary RPC, query, and tx child commands
@@ -106,6 +102,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		keys.Commands(rizon.DefaultNodeHome),
 	)
 }
+
 func addModuleInitFlags(startCmd *cobra.Command) {
 	crisis.AddModuleInitFlags(startCmd)
 }
@@ -171,6 +168,7 @@ func (ac appCreator) newApp(
 	traceStore io.Writer,
 	appOpts servertypes.AppOptions,
 ) servertypes.Application {
+
 	var cache sdk.MultiStorePersistentCache
 
 	if cast.ToBool(appOpts.Get(server.FlagInterBlockCache)) {
@@ -201,7 +199,6 @@ func (ac appCreator) newApp(
 		logger, db, traceStore, true, skipUpgradeHeights,
 		cast.ToString(appOpts.Get(flags.FlagHome)),
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
-		//rizon.MakeEncodingConfig(), // Ideally, we would reuse the one created by NewRootCmd.
 		ac.encCfg,
 		appOpts,
 		baseapp.SetPruning(pruningOpts),
@@ -227,6 +224,7 @@ func (ac appCreator) appExport(
 	jailAllowedAddrs []string,
 	appOpts servertypes.AppOptions,
 ) (servertypes.ExportedApp, error) {
+
 	homePath, ok := appOpts.Get(flags.FlagHome).(string)
 	if !ok || homePath == "" {
 		return servertypes.ExportedApp{}, errors.New("application home is not set")
@@ -254,5 +252,6 @@ func (ac appCreator) appExport(
 			return servertypes.ExportedApp{}, err
 		}
 	}
+
 	return rizonApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)
 }

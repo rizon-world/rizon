@@ -8,25 +8,17 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/gorilla/mux"
-	"github.com/rakyll/statik/fs"
-
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	"github.com/tendermint/tendermint/libs/log"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	dbm "github.com/tendermint/tm-db"
-
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	"github.com/cosmos/cosmos-sdk/simapp"
+	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
@@ -77,18 +69,26 @@ import (
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	transfer "github.com/cosmos/ibc-go/v2/modules/apps/transfer"
+	"github.com/cosmos/ibc-go/v2/modules/apps/transfer"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v2/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v2/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v2/modules/core"
 	ibcclient "github.com/cosmos/ibc-go/v2/modules/core/02-client"
 	ibcclientclient "github.com/cosmos/ibc-go/v2/modules/core/02-client/client"
 	ibcclienttypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
+	ibcconnectiontypes "github.com/cosmos/ibc-go/v2/modules/core/03-connection/types"
 	porttypes "github.com/cosmos/ibc-go/v2/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v2/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v2/modules/core/keeper"
-	rizonappparams "github.com/rizon-world/rizon/app/params"
+	"github.com/gorilla/mux"
+	"github.com/rakyll/statik/fs"
+	abci "github.com/tendermint/tendermint/abci/types"
+	tmjson "github.com/tendermint/tendermint/libs/json"
+	"github.com/tendermint/tendermint/libs/log"
+	tmos "github.com/tendermint/tendermint/libs/os"
+	dbm "github.com/tendermint/tm-db"
 
+	rizonappparams "github.com/rizon-world/rizon/app/params"
 	// unnamed import of statik for swagger UI support
 	_ "github.com/rizon-world/rizon/client/docs/statik"
 
@@ -101,13 +101,10 @@ import (
 	treasurytypes "github.com/rizon-world/rizon/x/treasury/types"
 
 	rizonmint "github.com/rizon-world/rizon/x/mint"
-
-	"github.com/strangelove-ventures/packet-forward-middleware/router"
-	routerkeeper "github.com/strangelove-ventures/packet-forward-middleware/router/keeper"
-	routertypes "github.com/strangelove-ventures/packet-forward-middleware/router/types"
 )
 
 const appName = "RizonApp"
+const upgradeName = "RizonApp"
 
 var (
 	// DefaultNodeHome default home directories for the application daemon
@@ -196,7 +193,6 @@ type RizonApp struct { // nolint: golint
 	TransferKeeper   ibctransferkeeper.Keeper
 	TokenswapKeeper  tokenswapkeeper.Keeper
 	TreasuryKeeper   treasurykeeper.Keeper
-	RouterKeeper     routerkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -206,7 +202,7 @@ type RizonApp struct { // nolint: golint
 	mm *module.Manager
 
 	// simulation manager
-	sm *module.SimulationManager
+	sm           *module.SimulationManager
 	configurator module.Configurator
 }
 
@@ -268,13 +264,18 @@ func NewRizonApp(
 		keys[paramstypes.StoreKey],
 		tkeys[paramstypes.TStoreKey],
 	)
+
 	// set the BaseApp's parameter store
-	bApp.SetParamStore(app.ParamsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramskeeper.ConsensusParamsKeyTable()))
+	bApp.SetParamStore(
+		app.ParamsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramskeeper.ConsensusParamsKeyTable()),
+	)
 
 	// add capability keeper and ScopeToModule for ibc module
 	app.CapabilityKeeper = capabilitykeeper.NewKeeper(appCodec, keys[capabilitytypes.StoreKey], memKeys[capabilitytypes.MemStoreKey])
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
+	// Applications that wish to enforce statically created ScopedKeepers should call `Seal` after creating
+	// their scoped modules in `NewApp` with `ScopeToModule`
 	app.CapabilityKeeper.Seal()
 
 	// add keepers
@@ -368,12 +369,12 @@ func NewRizonApp(
 
 	// register the proposal types
 	govRouter := govtypes.NewRouter()
-	govRouter.
-		AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
+	govRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
+
 	app.GovKeeper = govkeeper.NewKeeper(
 		appCodec,
 		keys[govtypes.StoreKey],
@@ -397,11 +398,9 @@ func NewRizonApp(
 	)
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
 
-	app.RouterKeeper = routerkeeper.NewKeeper(appCodec, keys[routertypes.StoreKey], app.GetSubspace(routertypes.ModuleName), app.TransferKeeper, app.DistrKeeper)
-	routerModule := router.NewAppModule(app.RouterKeeper, transferModule)
 	// Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
-	ibcRouter.AddRoute(ibctransfertypes.ModuleName, routerModule)
+	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	// create evidence keeper with router
@@ -421,9 +420,6 @@ func NewRizonApp(
 	if opt, ok := opt.(bool); ok {
 		skipGenesisInvariants = opt
 	}
-
-	// NOTE: Any module instantiated in the module manager that is later modified
-	// must be passed by reference here.
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
@@ -451,7 +447,6 @@ func NewRizonApp(
 		tokenswap.NewAppModule(appCodec, app.TokenswapKeeper, app.BankKeeper),
 		treasury.NewAppModule(appCodec, app.TreasuryKeeper, app.BankKeeper),
 		transferModule,
-		routerModule,
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -460,13 +455,13 @@ func NewRizonApp(
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	app.mm.SetOrderBeginBlockers(
 		upgradetypes.ModuleName,
+		capabilitytypes.ModuleName,
 		minttypes.ModuleName,
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
 		evidencetypes.ModuleName,
 		stakingtypes.ModuleName,
 		ibchost.ModuleName,
-		routertypes.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(
 		crisistypes.ModuleName,
@@ -496,11 +491,11 @@ func NewRizonApp(
 		ibctransfertypes.ModuleName,
 		tokenswaptypes.ModuleName,
 		treasurytypes.ModuleName,
-		routertypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
+
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
 	app.mm.RegisterServices(app.configurator)
 
@@ -533,8 +528,8 @@ func NewRizonApp(
 	anteHandler, err := NewAnteHandler(
 		HandlerOptions{
 			HandlerOptions: ante.HandlerOptions{
-				AccountKeeper: app.AccountKeeper,
-				BankKeeper:    app.BankKeeper,
+				AccountKeeper:   app.AccountKeeper,
+				BankKeeper:      app.BankKeeper,
 				SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
 				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
 			},
@@ -544,40 +539,56 @@ func NewRizonApp(
 	if err != nil {
 		panic(fmt.Errorf("failed to create AnteHandler: %s", err))
 	}
-	// initialize BaseApp
+
 	app.SetAnteHandler(anteHandler)
 	app.SetInitChainer(app.InitChainer)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 
+	app.UpgradeKeeper.SetUpgradeHandler(
+		upgradeName,
+		func(ctx sdk.Context, _ upgradetypes.Plan, _ module.VersionMap) (module.VersionMap, error) {
+			app.IBCKeeper.ConnectionKeeper.SetParams(ctx, ibcconnectiontypes.DefaultParams())
+
+			fromVM := make(map[string]uint64)
+			for moduleName := range app.mm.Modules {
+				fromVM[moduleName] = 1
+			}
+			// override versions for _new_ modules as to not skip InitGenesis
+			// TODO:
+			//fromVM[authz.ModuleName] = 0
+			//fromVM[feegrant.ModuleName] = 0
+
+			return app.mm.RunMigrations(ctx, app.configurator, fromVM)
+		},
+	)
+
+	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
+	if err != nil {
+		panic(fmt.Sprintf("failed to read upgrade info from disk %s", err))
+	}
+
+	if upgradeInfo.Name == upgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+		storeUpgrades := store.StoreUpgrades{
+			//Added: []string{authz.ModuleName, feegrant.ModuleName},
+			Added: []string{},
+		}
+
+		// configure store loader that checks if version == upgradeHeight and applies store upgrades
+		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
+	}
+
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
 			tmos.Exit(fmt.Sprintf("failed to load latest version: %s", err))
 		}
-
-		// Initialize and seal the capability keeper so all persistent capabilities
-		// are loaded in-memory and prevent any further modules from creating scoped
-		// sub-keepers.
-		// This must be done during creation of baseapp rather than in InitChain so
-		// that in-memory capabilities get regenerated on app restart.
-		// Note that since this reads from the store, we can only perform it when
-		// `loadLatest` is set to true.
-		// ctx := app.BaseApp.NewUncachedContext(true, tmproto.Header{})
-		// app.CapabilityKeeper.InitializeAndSeal(ctx)
 	}
+
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
 
 	return app
 }
-
-// MakeCodecs constructs the *std.Codec and *codec.LegacyAmino instances used by
-// Rizon. It is useful for tests and clients who do not want to construct the
-// full rizon application
-// func MakeCodecs() (codec.Marshaler, *codec.LegacyAmino) {
-// 	config := MakeEncodingConfig()
-// 	return config.Marshaler, config.Amino
-// }
 
 // Name returns the name of the App
 func (app *RizonApp) Name() string { return app.BaseApp.Name() }
@@ -598,6 +609,9 @@ func (app *RizonApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abc
 	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
 	}
+
+	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap())
+
 	return app.mm.InitGenesis(ctx, app.appCodec, genesisState)
 }
 
@@ -739,7 +753,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(tokenswaptypes.ModuleName)
 	paramsKeeper.Subspace(treasurytypes.ModuleName)
-	paramsKeeper.Subspace(routertypes.ModuleName).WithKeyTable(routertypes.ParamKeyTable())
 
 	return paramsKeeper
 }

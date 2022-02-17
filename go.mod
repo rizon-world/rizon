@@ -12,12 +12,11 @@ require (
 	github.com/rakyll/statik v0.1.7
 	github.com/spf13/cast v1.4.1
 	github.com/spf13/cobra v1.2.1
-	github.com/strangelove-ventures/packet-forward-middleware v1.0.1
 	github.com/stretchr/testify v1.7.0
 	github.com/tendermint/tendermint v0.34.14
 	github.com/tendermint/tm-db v0.6.4
-	google.golang.org/genproto v0.0.0-20210828152312-66f60bf46e71
-	google.golang.org/grpc v1.42.0
+	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
+	google.golang.org/grpc v1.40.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -36,7 +35,7 @@ require (
 	github.com/coinbase/rosetta-sdk-go v0.6.10 // indirect
 	github.com/confio/ics23/go v0.6.6 // indirect
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
-	github.com/cosmos/iavl v0.17.3 // indirect
+	github.com/cosmos/iavl v0.17.1 // indirect
 	github.com/cosmos/ledger-cosmos-go v0.11.1 // indirect
 	github.com/cosmos/ledger-go v0.9.2 // indirect
 	github.com/danieljoos/wincred v1.0.2 // indirect
@@ -72,6 +71,7 @@ require (
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/keybase/go-keychain v0.0.0-20190712205309-48d3d31d256d // indirect
 	github.com/klauspost/compress v1.11.7 // indirect
+	github.com/lib/pq v1.10.2 // indirect
 	github.com/libp2p/go-buffer-pool v0.0.2 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
@@ -117,8 +117,9 @@ require (
 	nhooyr.io/websocket v1.8.6 // indirect
 )
 
-replace google.golang.org/grpc => google.golang.org/grpc v1.33.2
-
-replace github.com/tendermint/tendermint => github.com/tendermint/tendermint v0.34.12
-
-replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
+replace (
+	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.44.2
+	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
+	github.com/tendermint/tendermint => github.com/tendermint/tendermint v0.34.14
+	google.golang.org/grpc => google.golang.org/grpc v1.33.2
+)
