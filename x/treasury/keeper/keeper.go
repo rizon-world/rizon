@@ -15,14 +15,14 @@ import (
 type (
 	Keeper struct {
 		storeKey   sdk.StoreKey
-		cdc        codec.BinaryMarshaler
+		cdc        codec.BinaryCodec
 		params     paramtypes.Subspace
 		bankKeeper types.BankKeeper
 	}
 )
 
 func NewKeeper(
-	cdc codec.Marshaler,
+	cdc codec.Codec,
 	storeKey sdk.StoreKey,
 	params paramtypes.Subspace,
 	bankKeeper types.BankKeeper,

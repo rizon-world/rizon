@@ -10,6 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 
+	rizon "github.com/rizon-world/rizon/types"
 	"github.com/rizon-world/rizon/x/treasury/types"
 )
 
@@ -29,7 +30,7 @@ func (k Querier) Currencies(c context.Context, req *types.QueryCurrenciesRequest
 
 	pageRes, err := query.Paginate(currencyStore, req.Pagination, func(_, value []byte) error {
 		var currency types.Currency
-		err := k.cdc.UnmarshalBinaryBare(value, &currency)
+		err := k.cdc.Unmarshal(value, &currency)
 		if err != nil {
 			return err
 		}
@@ -65,6 +66,12 @@ func (k Querier) Currency(c context.Context, req *types.QueryCurrencyRequest) (*
 	res := k.Keeper.GetCurrency(ctx, req.Denom)
 
 	return &types.QueryCurrencyResponse{Currency: &res}, nil
+}
+
+// MaxAtoloSupply queries maximum mintable amount of atolo
+func (k Querier) MaxAtoloSupply(c context.Context, _ *types.QueryMaxRequest) (*types.QueryMaxResponse, error) {
+	maxSupply := types.NewMaxAtoloSupply(rizon.RizonMaxSupply)
+	return &types.QueryMaxResponse{MaxAtoloSupply: maxSupply}, nil
 }
 
 // Params queries the parameters of treasury

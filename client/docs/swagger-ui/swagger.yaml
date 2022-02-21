@@ -22285,6 +22285,51 @@ paths:
           type: string
       tags:
         - Query
+  /rizon/treasury/max_atolo:
+    get:
+      summary: Max queries maximum mintable amount of uatolo
+      operationId: MaxAtoloSupply
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              max_atolo_supply:
+                title: params defines maximum mintable amount of uatolo
+                type: object
+                properties:
+                  amount:
+                    type: string
+                    format: int64
+                    title: amount is maximum mintable amount of atolo
+            title: >-
+              QueryMaxResponse is response type for the Query/MaxAtoloSupply RPC
+              method
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      tags:
+        - Query
   /rizon/treasury/params:
     get:
       summary: Params queries parameters of treasury
@@ -38209,7 +38254,6 @@ definitions:
         type: string
         format: int64
         title: limit is the maximum swappable amount
-    title: Params defines the parameters for the tokenswap module
   rizonworld.rizon.tokenswap.QueryParamsResponse:
     type: object
     properties:
@@ -38227,7 +38271,6 @@ definitions:
             type: string
             format: int64
             title: limit is the maximum swappable amount
-    title: QueryParamsResponse is response type for the Query/Params RPC method
   rizonworld.rizon.tokenswap.QuerySwappedAmountResponse:
     type: object
     properties:
@@ -38239,9 +38282,6 @@ definitions:
             type: string
             format: int64
             title: amount is the amount of already swapped
-    title: >-
-      QuerySwappedAmountResponse is response type for the Query/SwappedAmount
-      RPC method
   rizonworld.rizon.tokenswap.QueryTokenswapResponse:
     type: object
     properties:
@@ -38278,7 +38318,6 @@ definitions:
 
                 signatures required by gogoproto.
             title: amount is the amount of swap process
-    title: QueryTokenswapResponse is response type for the Query/Tokenswap RPC method
   rizonworld.rizon.tokenswap.SwappedAmount:
     type: object
     properties:
@@ -38286,7 +38325,6 @@ definitions:
         type: string
         format: int64
         title: amount is the amount of already swapped
-    title: Current swapped amount of tokenswap module
   rizonworld.rizon.tokenswap.Tokenswap:
     type: object
     properties:
@@ -38316,7 +38354,6 @@ definitions:
             NOTE: The amount field is an Int which implements the custom method
             signatures required by gogoproto.
         title: amount is the amount of swap process
-    title: Tokenswap defines the tokenswap state
   rizonworld.rizon.treasury.Currencies:
     type: object
     properties:
@@ -38325,7 +38362,6 @@ definitions:
         items:
           type: string
         title: denoms is the denom list of all currencies
-    title: Currencies
   rizonworld.rizon.treasury.Currency:
     type: object
     properties:
@@ -38341,7 +38377,13 @@ definitions:
       mintable:
         type: boolean
         title: mintable indicates whether this currency can be minted or not
-    title: Currency defines a single currency info
+  rizonworld.rizon.treasury.MaxAtoloSupply:
+    type: object
+    properties:
+      amount:
+        type: string
+        format: int64
+        title: amount is maximum mintable amount of atolo
   rizonworld.rizon.treasury.Params:
     type: object
     properties:
@@ -38373,7 +38415,6 @@ definitions:
               title: mintable indicates whether this currency can be minted or not
           title: Currency defines a single currency info
         title: currency_list is the list of supported currencies
-    title: Params defines the parameters for the treasury module
   rizonworld.rizon.treasury.QueryCurrenciesResponse:
     type: object
     properties:
@@ -38409,9 +38450,6 @@ definitions:
                    repeated Bar results = 1;
                    PageResponse page = 2;
            }
-    title: >-
-      QueryCurrenciesResponse is response type for the Query/Currencies RPC
-      method
   rizonworld.rizon.treasury.QueryCurrencyResponse:
     type: object
     properties:
@@ -38431,7 +38469,17 @@ definitions:
           mintable:
             type: boolean
             title: mintable indicates whether this currency can be minted or not
-    title: QueryCurrencyResponse is response type for the Query/Currency RPC method
+  rizonworld.rizon.treasury.QueryMaxResponse:
+    type: object
+    properties:
+      max_atolo_supply:
+        title: params defines maximum mintable amount of uatolo
+        type: object
+        properties:
+          amount:
+            type: string
+            format: int64
+            title: amount is maximum mintable amount of atolo
   rizonworld.rizon.treasury.QueryParamsResponse:
     type: object
     properties:
@@ -38469,4 +38517,3 @@ definitions:
                     not
               title: Currency defines a single currency info
             title: currency_list is the list of supported currencies
-    title: QueryParamsResponse is response type for the Query/Params RPC method

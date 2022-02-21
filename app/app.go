@@ -1,32 +1,24 @@
 package rizon
 
 import (
+	"fmt"
 	"io"
 	stdlog "log"
 	"net/http"
 	"os"
 	"path/filepath"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/gorilla/mux"
-	"github.com/rakyll/statik/fs"
-
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	"github.com/tendermint/tendermint/libs/log"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	dbm "github.com/tendermint/tm-db"
-
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	"github.com/cosmos/cosmos-sdk/simapp"
+	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
@@ -38,6 +30,9 @@ import (
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
+	"github.com/cosmos/cosmos-sdk/x/authz"
+	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
+	authzmodule "github.com/cosmos/cosmos-sdk/x/authz/module"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -54,19 +49,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/evidence"
 	evidencekeeper "github.com/cosmos/cosmos-sdk/x/evidence/keeper"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	"github.com/cosmos/cosmos-sdk/x/feegrant"
+	feegrantkeeper "github.com/cosmos/cosmos-sdk/x/feegrant/keeper"
+	feegrantmodule "github.com/cosmos/cosmos-sdk/x/feegrant/module"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/cosmos/cosmos-sdk/x/gov"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	transfer "github.com/cosmos/cosmos-sdk/x/ibc/applications/transfer"
-	ibctransferkeeper "github.com/cosmos/cosmos-sdk/x/ibc/applications/transfer/keeper"
-	ibctransfertypes "github.com/cosmos/cosmos-sdk/x/ibc/applications/transfer/types"
-	ibc "github.com/cosmos/cosmos-sdk/x/ibc/core"
-	ibcclient "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client"
-	porttypes "github.com/cosmos/cosmos-sdk/x/ibc/core/05-port/types"
-	ibchost "github.com/cosmos/cosmos-sdk/x/ibc/core/24-host"
-	ibckeeper "github.com/cosmos/cosmos-sdk/x/ibc/core/keeper"
 	"github.com/cosmos/cosmos-sdk/x/mint"
 	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
@@ -85,8 +75,26 @@ import (
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	rizonappparams "github.com/rizon-world/rizon/app/params"
+	"github.com/cosmos/ibc-go/v2/modules/apps/transfer"
+	ibctransferkeeper "github.com/cosmos/ibc-go/v2/modules/apps/transfer/keeper"
+	ibctransfertypes "github.com/cosmos/ibc-go/v2/modules/apps/transfer/types"
+	ibc "github.com/cosmos/ibc-go/v2/modules/core"
+	ibcclient "github.com/cosmos/ibc-go/v2/modules/core/02-client"
+	ibcclientclient "github.com/cosmos/ibc-go/v2/modules/core/02-client/client"
+	ibcclienttypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
+	ibcconnectiontypes "github.com/cosmos/ibc-go/v2/modules/core/03-connection/types"
+	porttypes "github.com/cosmos/ibc-go/v2/modules/core/05-port/types"
+	ibchost "github.com/cosmos/ibc-go/v2/modules/core/24-host"
+	ibckeeper "github.com/cosmos/ibc-go/v2/modules/core/keeper"
+	"github.com/gorilla/mux"
+	"github.com/rakyll/statik/fs"
+	abci "github.com/tendermint/tendermint/abci/types"
+	tmjson "github.com/tendermint/tendermint/libs/json"
+	"github.com/tendermint/tendermint/libs/log"
+	tmos "github.com/tendermint/tendermint/libs/os"
+	dbm "github.com/tendermint/tm-db"
 
+	rizonappparams "github.com/rizon-world/rizon/app/params"
 	// unnamed import of statik for swagger UI support
 	_ "github.com/rizon-world/rizon/client/docs/statik"
 
@@ -97,9 +105,12 @@ import (
 	"github.com/rizon-world/rizon/x/treasury"
 	treasurykeeper "github.com/rizon-world/rizon/x/treasury/keeper"
 	treasurytypes "github.com/rizon-world/rizon/x/treasury/types"
+
+	rizonmint "github.com/rizon-world/rizon/x/mint"
 )
 
 const appName = "RizonApp"
+const upgradeName = "RizonApp"
 
 var (
 	// DefaultNodeHome default home directories for the application daemon
@@ -117,11 +128,18 @@ var (
 		mint.AppModuleBasic{},
 		distr.AppModuleBasic{},
 		gov.NewAppModuleBasic(
-			paramsclient.ProposalHandler, distrclient.ProposalHandler, upgradeclient.ProposalHandler, upgradeclient.CancelProposalHandler,
+			paramsclient.ProposalHandler,
+			distrclient.ProposalHandler,
+			upgradeclient.ProposalHandler,
+			upgradeclient.CancelProposalHandler,
+			ibcclientclient.UpdateClientProposalHandler,
+			ibcclientclient.UpgradeProposalHandler,
 		),
 		params.AppModuleBasic{},
 		crisis.AppModuleBasic{},
 		slashing.AppModuleBasic{},
+		feegrantmodule.AppModuleBasic{},
+		authzmodule.AppModuleBasic{},
 		ibc.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
@@ -156,7 +174,7 @@ var (
 type RizonApp struct { // nolint: golint
 	*baseapp.BaseApp
 	legacyAmino       *codec.LegacyAmino
-	appCodec          codec.Marshaler
+	appCodec          codec.Codec
 	interfaceRegistry types.InterfaceRegistry
 
 	invCheckPeriod uint
@@ -183,6 +201,8 @@ type RizonApp struct { // nolint: golint
 	TransferKeeper   ibctransferkeeper.Keeper
 	TokenswapKeeper  tokenswapkeeper.Keeper
 	TreasuryKeeper   treasurykeeper.Keeper
+	FeeGrantKeeper   feegrantkeeper.Keeper
+	AuthzKeeper      authzkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -192,7 +212,8 @@ type RizonApp struct { // nolint: golint
 	mm *module.Manager
 
 	// simulation manager
-	sm *module.SimulationManager
+	sm           *module.SimulationManager
+	configurator module.Configurator
 }
 
 func init() {
@@ -206,8 +227,15 @@ func init() {
 
 // NewRizonApp returns a reference to an initialized Rizon.
 func NewRizonApp(
-	logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool, skipUpgradeHeights map[int64]bool,
-	homePath string, invCheckPeriod uint, encodingConfig rizonappparams.EncodingConfig, appOpts servertypes.AppOptions, baseAppOptions ...func(*baseapp.BaseApp),
+	logger log.Logger,
+	db dbm.DB, traceStore io.Writer,
+	loadLatest bool,
+	skipUpgradeHeights map[int64]bool,
+	homePath string,
+	invCheckPeriod uint,
+	encodingConfig rizonappparams.EncodingConfig,
+	appOpts servertypes.AppOptions,
+	baseAppOptions ...func(*baseapp.BaseApp),
 ) *RizonApp {
 
 	appCodec := encodingConfig.Marshaler
@@ -216,7 +244,7 @@ func NewRizonApp(
 
 	bApp := baseapp.NewBaseApp(appName, logger, db, encodingConfig.TxConfig.TxDecoder(), baseAppOptions...)
 	bApp.SetCommitMultiStoreTracer(traceStore)
-	bApp.SetAppVersion(version.Version)
+	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 
 	keys := sdk.NewKVStoreKeys(
@@ -224,7 +252,7 @@ func NewRizonApp(
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
-		tokenswaptypes.StoreKey, treasurytypes.StoreKey,
+		tokenswaptypes.StoreKey, treasurytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -240,45 +268,107 @@ func NewRizonApp(
 		memKeys:           memKeys,
 	}
 
-	app.ParamsKeeper = initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
+	app.ParamsKeeper = initParamsKeeper(
+		appCodec,
+		legacyAmino,
+		keys[paramstypes.StoreKey],
+		tkeys[paramstypes.TStoreKey],
+	)
+
 	// set the BaseApp's parameter store
-	bApp.SetParamStore(app.ParamsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramskeeper.ConsensusParamsKeyTable()))
+	bApp.SetParamStore(
+		app.ParamsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramskeeper.ConsensusParamsKeyTable()),
+	)
 
 	// add capability keeper and ScopeToModule for ibc module
 	app.CapabilityKeeper = capabilitykeeper.NewKeeper(appCodec, keys[capabilitytypes.StoreKey], memKeys[capabilitytypes.MemStoreKey])
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
+	// Applications that wish to enforce statically created ScopedKeepers should call `Seal` after creating
+	// their scoped modules in `NewApp` with `ScopeToModule`
+	app.CapabilityKeeper.Seal()
 
 	// add keepers
 	app.AccountKeeper = authkeeper.NewAccountKeeper(
-		appCodec, keys[authtypes.StoreKey], app.GetSubspace(authtypes.ModuleName), authtypes.ProtoBaseAccount, maccPerms,
+		appCodec,
+		keys[authtypes.StoreKey],
+		app.GetSubspace(authtypes.ModuleName),
+		authtypes.ProtoBaseAccount,
+		maccPerms,
 	)
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
-		appCodec, keys[banktypes.StoreKey], app.AccountKeeper, app.GetSubspace(banktypes.ModuleName), app.ModuleAccountAddrs(),
+		appCodec,
+		keys[banktypes.StoreKey],
+		app.AccountKeeper,
+		app.GetSubspace(banktypes.ModuleName),
+		app.ModuleAccountAddrs(),
+	)
+	app.AuthzKeeper = authzkeeper.NewKeeper(
+		keys[authzkeeper.StoreKey],
+		appCodec,
+		app.BaseApp.MsgServiceRouter(),
+	)
+	app.FeeGrantKeeper = feegrantkeeper.NewKeeper(
+		appCodec,
+		keys[feegrant.StoreKey],
+		app.AccountKeeper,
 	)
 	stakingKeeper := stakingkeeper.NewKeeper(
-		appCodec, keys[stakingtypes.StoreKey], app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName),
+		appCodec,
+		keys[stakingtypes.StoreKey],
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.GetSubspace(stakingtypes.ModuleName),
 	)
 	app.MintKeeper = mintkeeper.NewKeeper(
-		appCodec, keys[minttypes.StoreKey], app.GetSubspace(minttypes.ModuleName), &stakingKeeper,
-		app.AccountKeeper, app.BankKeeper, authtypes.FeeCollectorName,
+		appCodec,
+		keys[minttypes.StoreKey],
+		app.GetSubspace(minttypes.ModuleName),
+		&stakingKeeper,
+		app.AccountKeeper,
+		app.BankKeeper,
+		authtypes.FeeCollectorName,
 	)
 	app.DistrKeeper = distrkeeper.NewKeeper(
-		appCodec, keys[distrtypes.StoreKey], app.GetSubspace(distrtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
-		&stakingKeeper, authtypes.FeeCollectorName, app.ModuleAccountAddrs(),
+		appCodec,
+		keys[distrtypes.StoreKey],
+		app.GetSubspace(distrtypes.ModuleName),
+		app.AccountKeeper,
+		app.BankKeeper,
+		&stakingKeeper,
+		authtypes.FeeCollectorName,
+		app.ModuleAccountAddrs(),
 	)
 	app.SlashingKeeper = slashingkeeper.NewKeeper(
-		appCodec, keys[slashingtypes.StoreKey], &stakingKeeper, app.GetSubspace(slashingtypes.ModuleName),
+		appCodec,
+		keys[slashingtypes.StoreKey],
+		&stakingKeeper,
+		app.GetSubspace(slashingtypes.ModuleName),
 	)
 	app.CrisisKeeper = crisiskeeper.NewKeeper(
-		app.GetSubspace(crisistypes.ModuleName), invCheckPeriod, app.BankKeeper, authtypes.FeeCollectorName,
+		app.GetSubspace(crisistypes.ModuleName),
+		invCheckPeriod,
+		app.BankKeeper,
+		authtypes.FeeCollectorName,
 	)
-	app.UpgradeKeeper = upgradekeeper.NewKeeper(skipUpgradeHeights, keys[upgradetypes.StoreKey], appCodec, homePath)
+	app.UpgradeKeeper = upgradekeeper.NewKeeper(
+		skipUpgradeHeights,
+		keys[upgradetypes.StoreKey],
+		appCodec,
+		homePath,
+		app.BaseApp,
+	)
 	app.TokenswapKeeper = tokenswapkeeper.NewKeeper(
-		appCodec, keys[tokenswaptypes.StoreKey], app.GetSubspace(tokenswaptypes.ModuleName), app.BankKeeper,
+		appCodec,
+		keys[tokenswaptypes.StoreKey],
+		app.GetSubspace(tokenswaptypes.ModuleName),
+		app.BankKeeper,
 	)
 	app.TreasuryKeeper = treasurykeeper.NewKeeper(
-		appCodec, keys[treasurytypes.StoreKey], app.GetSubspace(treasurytypes.ModuleName), app.BankKeeper,
+		appCodec,
+		keys[treasurytypes.StoreKey],
+		app.GetSubspace(treasurytypes.ModuleName),
+		app.BankKeeper,
 	)
 
 	// register the staking hooks
@@ -289,7 +379,12 @@ func NewRizonApp(
 
 	// Create IBC Keeper
 	app.IBCKeeper = ibckeeper.NewKeeper(
-		appCodec, keys[ibchost.StoreKey], app.GetSubspace(ibchost.ModuleName), app.StakingKeeper, scopedIBCKeeper,
+		appCodec,
+		keys[ibchost.StoreKey],
+		app.GetSubspace(ibchost.ModuleName),
+		app.StakingKeeper,
+		app.UpgradeKeeper,
+		scopedIBCKeeper,
 	)
 
 	// register the proposal types
@@ -298,17 +393,28 @@ func NewRizonApp(
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
-		AddRoute(ibchost.RouterKey, ibcclient.NewClientUpdateProposalHandler(app.IBCKeeper.ClientKeeper))
+		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
+
 	app.GovKeeper = govkeeper.NewKeeper(
-		appCodec, keys[govtypes.StoreKey], app.GetSubspace(govtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
-		&stakingKeeper, govRouter,
+		appCodec,
+		keys[govtypes.StoreKey],
+		app.GetSubspace(govtypes.ModuleName),
+		app.AccountKeeper,
+		app.BankKeeper,
+		&stakingKeeper,
+		govRouter,
 	)
 
 	// Create Transfer Keepers
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
-		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
-		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
-		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
+		appCodec,
+		keys[ibctransfertypes.StoreKey],
+		app.GetSubspace(ibctransfertypes.ModuleName),
+		app.IBCKeeper.ChannelKeeper,
+		&app.IBCKeeper.PortKeeper,
+		app.AccountKeeper,
+		app.BankKeeper,
+		scopedTransferKeeper,
 	)
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
 
@@ -319,7 +425,10 @@ func NewRizonApp(
 
 	// create evidence keeper with router
 	evidenceKeeper := evidencekeeper.NewKeeper(
-		appCodec, keys[evidencetypes.StoreKey], &app.StakingKeeper, app.SlashingKeeper,
+		appCodec,
+		keys[evidencetypes.StoreKey],
+		&app.StakingKeeper,
+		app.SlashingKeeper,
 	)
 	// If evidence needs to be handled for the app, set routes in router here and seal
 	app.EvidenceKeeper = *evidenceKeeper
@@ -334,12 +443,11 @@ func NewRizonApp(
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
-
-	// NOTE: Any module instantiated in the module manager that is later modified
-	// must be passed by reference here.
 	app.mm = module.NewManager(
 		genutil.NewAppModule(
-			app.AccountKeeper, app.StakingKeeper, app.BaseApp.DeliverTx,
+			app.AccountKeeper,
+			app.StakingKeeper,
+			app.BaseApp.DeliverTx,
 			encodingConfig.TxConfig,
 		),
 		auth.NewAppModule(appCodec, app.AccountKeeper, nil),
@@ -348,12 +456,14 @@ func NewRizonApp(
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
 		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
-		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper),
+		rizonmint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 		upgrade.NewAppModule(app.UpgradeKeeper),
 		evidence.NewAppModule(app.EvidenceKeeper),
+		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
+		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		ibc.NewAppModule(app.IBCKeeper),
 		params.NewAppModule(app.ParamsKeeper),
 		tokenswap.NewAppModule(appCodec, app.TokenswapKeeper, app.BankKeeper),
@@ -366,10 +476,23 @@ func NewRizonApp(
 	// CanWithdrawInvariant invariant.
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	app.mm.SetOrderBeginBlockers(
-		upgradetypes.ModuleName, minttypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName,
-		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName,
+		upgradetypes.ModuleName,
+		capabilitytypes.ModuleName,
+		minttypes.ModuleName,
+		distrtypes.ModuleName,
+		slashingtypes.ModuleName,
+		evidencetypes.ModuleName,
+		stakingtypes.ModuleName,
+		ibchost.ModuleName,
 	)
-	app.mm.SetOrderEndBlockers(crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName, treasurytypes.ModuleName)
+	app.mm.SetOrderEndBlockers(
+		crisistypes.ModuleName,
+		govtypes.ModuleName,
+		stakingtypes.ModuleName,
+		treasurytypes.ModuleName,
+		feegrant.ModuleName,
+		authz.ModuleName,
+	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
@@ -377,15 +500,30 @@ func NewRizonApp(
 	// so that other modules that want to create or claim capabilities afterwards in InitChain
 	// can do so safely.
 	app.mm.SetOrderInitGenesis(
-		capabilitytypes.ModuleName, authtypes.ModuleName, banktypes.ModuleName, distrtypes.ModuleName, stakingtypes.ModuleName,
-		slashingtypes.ModuleName, govtypes.ModuleName, minttypes.ModuleName, crisistypes.ModuleName,
-		ibchost.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName, ibctransfertypes.ModuleName,
-		tokenswaptypes.ModuleName, treasurytypes.ModuleName,
+		capabilitytypes.ModuleName,
+		authtypes.ModuleName,
+		banktypes.ModuleName,
+		distrtypes.ModuleName,
+		stakingtypes.ModuleName,
+		slashingtypes.ModuleName,
+		govtypes.ModuleName,
+		minttypes.ModuleName,
+		crisistypes.ModuleName,
+		ibchost.ModuleName,
+		genutiltypes.ModuleName,
+		evidencetypes.ModuleName,
+		ibctransfertypes.ModuleName,
+		feegrant.ModuleName,
+		authz.ModuleName,
+		tokenswaptypes.ModuleName,
+		treasurytypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
-	app.mm.RegisterServices(module.NewConfigurator(app.MsgServiceRouter(), app.GRPCQueryRouter()))
+
+	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
+	app.mm.RegisterServices(app.configurator)
 
 	// create the simulation manager and define the order of the modules for deterministic simulations
 	//
@@ -395,6 +533,8 @@ func NewRizonApp(
 		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
+		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
+		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
 		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper),
 		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
@@ -413,44 +553,68 @@ func NewRizonApp(
 	app.MountTransientStores(tkeys)
 	app.MountMemoryStores(memKeys)
 
-	// initialize BaseApp
+	anteHandler, err := NewAnteHandler(
+		HandlerOptions{
+			HandlerOptions: ante.HandlerOptions{
+				AccountKeeper:   app.AccountKeeper,
+				BankKeeper:      app.BankKeeper,
+				FeegrantKeeper:  app.FeeGrantKeeper,
+				SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
+				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
+			},
+			IBCChannelkeeper: app.IBCKeeper.ChannelKeeper,
+		},
+	)
+	if err != nil {
+		panic(fmt.Errorf("failed to create AnteHandler: %s", err))
+	}
+
+	app.SetAnteHandler(anteHandler)
 	app.SetInitChainer(app.InitChainer)
 	app.SetBeginBlocker(app.BeginBlocker)
-	app.SetAnteHandler(
-		ante.NewAnteHandler(
-			app.AccountKeeper, app.BankKeeper, ante.DefaultSigVerificationGasConsumer,
-			encodingConfig.TxConfig.SignModeHandler(),
-		),
-	)
 	app.SetEndBlocker(app.EndBlocker)
+
+	app.UpgradeKeeper.SetUpgradeHandler(
+		upgradeName,
+		func(ctx sdk.Context, _ upgradetypes.Plan, _ module.VersionMap) (module.VersionMap, error) {
+			app.IBCKeeper.ConnectionKeeper.SetParams(ctx, ibcconnectiontypes.DefaultParams())
+
+			fromVM := make(map[string]uint64)
+			for moduleName := range app.mm.Modules {
+				fromVM[moduleName] = 1
+			}
+			// override versions for _new_ modules as to not skip InitGenesis
+			fromVM[authz.ModuleName] = 0
+			fromVM[feegrant.ModuleName] = 0
+
+			return app.mm.RunMigrations(ctx, app.configurator, fromVM)
+		},
+	)
+
+	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
+	if err != nil {
+		panic(fmt.Sprintf("failed to read upgrade info from disk %s", err))
+	}
+
+	if upgradeInfo.Name == upgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+		storeUpgrades := store.StoreUpgrades{
+			Added: []string{authz.ModuleName, feegrant.ModuleName},
+		}
+
+		// configure store loader that checks if version == upgradeHeight and applies store upgrades
+		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
+	}
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
-			tmos.Exit(err.Error())
+			tmos.Exit(fmt.Sprintf("failed to load latest version: %s", err))
 		}
-
-		// Initialize and seal the capability keeper so all persistent capabilities
-		// are loaded in-memory and prevent any further modules from creating scoped
-		// sub-keepers.
-		// This must be done during creation of baseapp rather than in InitChain so
-		// that in-memory capabilities get regenerated on app restart.
-		// Note that since this reads from the store, we can only perform it when
-		// `loadLatest` is set to true.
-		ctx := app.BaseApp.NewUncachedContext(true, tmproto.Header{})
-		app.CapabilityKeeper.InitializeAndSeal(ctx)
 	}
+
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
 
 	return app
-}
-
-// MakeCodecs constructs the *std.Codec and *codec.LegacyAmino instances used by
-// Rizon. It is useful for tests and clients who do not want to construct the
-// full rizon application
-func MakeCodecs() (codec.Marshaler, *codec.LegacyAmino) {
-	config := MakeEncodingConfig()
-	return config.Marshaler, config.Amino
 }
 
 // Name returns the name of the App
@@ -472,6 +636,9 @@ func (app *RizonApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abc
 	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
 	}
+
+	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap())
+
 	return app.mm.InitGenesis(ctx, app.appCodec, genesisState)
 }
 
@@ -502,7 +669,7 @@ func (app *RizonApp) LegacyAmino() *codec.LegacyAmino {
 //
 // NOTE: This is solely to be used for testing purposes as it may be desirable
 // for modules to register their own custom testing types.
-func (app *RizonApp) AppCodec() codec.Marshaler {
+func (app *RizonApp) AppCodec() codec.Codec {
 	return app.appCodec
 }
 
@@ -598,7 +765,7 @@ func GetMaccPerms() map[string][]string {
 }
 
 // initParamsKeeper init params keeper and its subspaces
-func initParamsKeeper(appCodec codec.BinaryMarshaler, legacyAmino *codec.LegacyAmino, key, tkey sdk.StoreKey) paramskeeper.Keeper {
+func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino, key, tkey sdk.StoreKey) paramskeeper.Keeper {
 	paramsKeeper := paramskeeper.NewKeeper(appCodec, legacyAmino, key, tkey)
 
 	paramsKeeper.Subspace(authtypes.ModuleName)

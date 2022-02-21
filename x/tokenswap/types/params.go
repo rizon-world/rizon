@@ -7,6 +7,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
+	rizon "github.com/rizon-world/rizon/types"
 )
 
 const (
@@ -15,7 +17,7 @@ const (
 	// who can request tokenswap
 	DefaultSigner = "rizon1cafygu0kppg46tq9kkzz9z9nrf5v8zwwnf5t9l"
 	// tokenswap amount limitation
-	DefaultLimit = SwapLimitation
+	DefaultLimit = rizon.SwapLimitation
 )
 
 var (

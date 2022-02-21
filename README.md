@@ -1,6 +1,7 @@
 # RIZON PLATFORM
 
 [![license](https://img.shields.io/github/license/rizon-world/rizon.svg)](https://github.com/rizon-world/rizon/blob/master/LICENSE)
+[![report](https://goreportcard.com/badge/github.com/rizon-world/rizon)](https://goreportcard.com/report/github.com/rizon-world/rizon)
 
 Welcome to the official RIZON PLATFORM repository.
 RIZON is a decentralized network program which helps you to connect other blockchain and build your own network easily.
@@ -18,7 +19,7 @@ We currently supports the operating systems below.
 
 You should install the packages below before you build the source.
 
-* [Golang](https://golang.org/doc/install) >= 1.15
+* [Golang](https://golang.org/doc/install) >= 1.17
 * make
 
 ### Build
