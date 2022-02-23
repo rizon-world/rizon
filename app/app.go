@@ -88,6 +88,7 @@ import (
 	ibckeeper "github.com/cosmos/ibc-go/v2/modules/core/keeper"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
+	"github.com/spf13/cast"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/libs/log"
@@ -284,8 +285,6 @@ func NewRizonApp(
 	app.CapabilityKeeper = capabilitykeeper.NewKeeper(appCodec, keys[capabilitytypes.StoreKey], memKeys[capabilitytypes.MemStoreKey])
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
-	// Applications that wish to enforce statically created ScopedKeepers should call `Seal` after creating
-	// their scoped modules in `NewApp` with `ScopeToModule`
 	app.CapabilityKeeper.Seal()
 
 	// add keepers
@@ -430,16 +429,10 @@ func NewRizonApp(
 		&app.StakingKeeper,
 		app.SlashingKeeper,
 	)
-	// If evidence needs to be handled for the app, set routes in router here and seal
-	app.EvidenceKeeper = *evidenceKeeper
-	/****  Module Options ****/
 
-	/****  Module Options ****/
-	var skipGenesisInvariants = false
-	opt := appOpts.Get(crisis.FlagSkipGenesisInvariants)
-	if opt, ok := opt.(bool); ok {
-		skipGenesisInvariants = opt
-	}
+	app.EvidenceKeeper = *evidenceKeeper
+
+	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
