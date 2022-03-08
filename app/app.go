@@ -111,7 +111,7 @@ import (
 )
 
 const appName = "RizonApp"
-const upgradeName = "RizonApp"
+const upgradeName = "Magnus"
 
 var (
 	// DefaultNodeHome default home directories for the application daemon
