@@ -30,7 +30,7 @@ func (k Querier) Currencies(c context.Context, req *types.QueryCurrenciesRequest
 
 	pageRes, err := query.Paginate(currencyStore, req.Pagination, func(_, value []byte) error {
 		var currency types.Currency
-		err := k.cdc.UnmarshalBinaryBare(value, &currency)
+		err := k.cdc.Unmarshal(value, &currency)
 		if err != nil {
 			return err
 		}
