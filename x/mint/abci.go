@@ -28,8 +28,8 @@ func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 
 	/*************************************************/
 	/* start of modification for restricting max supply */
-	// if total supply is going to be greater than or equal to RizonMaxSupply, set minters to zero
-	provisionAmt := minter.AnnualProvisions.QuoInt(sdk.NewInt(int64(params.BlocksPerYear)))
+	// if total supply is going to be greater than RizonMaxSupply, set minters to zero
+	provisionAmt := minter.AnnualProvisions.QuoInt(sdk.NewIntFromUint64(params.BlocksPerYear))
 	if totalStakingSupply.Add(provisionAmt.TruncateInt()).GT(sdk.NewInt(int64(rizon.RizonMaxSupply))) {
 		minter.Inflation = sdk.ZeroDec()
 		minter.AnnualProvisions = sdk.ZeroDec()

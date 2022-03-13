@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	rizon "github.com/rizon-world/rizon/types"
 	"github.com/rizon-world/rizon/x/treasury/keeper"
 	"github.com/rizon-world/rizon/x/treasury/types"
 )
@@ -33,7 +34,7 @@ func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
 	params := k.GetParams(ctx)
 	var denoms []string
 	for _, c := range params.CurrencyList {
-		if "uatolo" == c.Denom {
+		if rizon.DefaultDenom == c.Denom {
 			continue
 		}
 		k.SetCurrency(ctx, c)
