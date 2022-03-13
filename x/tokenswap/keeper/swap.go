@@ -46,8 +46,9 @@ func (k Keeper) Swap(ctx sdk.Context, swap types.Tokenswap) error {
 // GetSwap returns a tokenswap item by tx hash
 func (k Keeper) GetSwap(ctx sdk.Context, txHash string) (swap types.Tokenswap, err error) {
 	store := k.Store(ctx)
+	key := types.GetSwapKey(txHash)
 
-	value := store.Get([]byte(txHash))
+	value := store.Get(key)
 	err = k.cdc.Unmarshal(value, &swap)
 
 	return swap, err
@@ -56,21 +57,24 @@ func (k Keeper) GetSwap(ctx sdk.Context, txHash string) (swap types.Tokenswap, e
 // AlreadySwapped returns true if tx hash has existed
 func (k *Keeper) AlreadySwapped(ctx sdk.Context, txHash string) bool {
 	store := k.Store(ctx)
-	return store.Has([]byte(txHash))
+	key := types.GetSwapKey(txHash)
+
+	return store.Has(key)
 }
 
 // SetSwap stores a tokenswap item with tx hash as a key
 func (k Keeper) SetSwap(ctx sdk.Context, swap types.Tokenswap) {
 	store := k.Store(ctx)
+	key := types.GetSwapKey(swap.TxHash)
 
-	store.Set([]byte(swap.TxHash), k.cdc.MustMarshal(&swap))
+	store.Set(key, k.cdc.MustMarshal(&swap))
 }
 
 // SetSwappedAmount updates current tokenswap amount
 func (k Keeper) SetSwappedAmount(ctx sdk.Context, amt types.SwappedAmount) {
 	store := k.Store(ctx)
 
-	store.Set([]byte(types.KeySwappedAmount), k.cdc.MustMarshal(&amt))
+	store.Set(types.SwappedAmountKey, k.cdc.MustMarshal(&amt))
 }
 
 // GetSwappedAmount returns current tokenswap amount
@@ -78,8 +82,8 @@ func (k Keeper) GetSwappedAmount(ctx sdk.Context) int64 {
 	store := k.Store(ctx)
 
 	var amt types.SwappedAmount
-	bz := store.Get(types.KeySwappedAmount)
-	k.cdc.Unmarshal(bz, &amt)
+	bz := store.Get(types.SwappedAmountKey)
+	k.cdc.MustUnmarshal(bz, &amt)
 
 	return amt.Amount
 }
