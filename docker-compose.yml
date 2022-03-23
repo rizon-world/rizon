@@ -1,0 +1,67 @@
+version: '3'
+
+services:
+  rizonnode0:
+    container_name: rizonnode0
+    image: "rizon-world/rizon-node"
+    ports:
+      - "26656-26657:26656-26657"
+    environment:
+      - ID=0
+      - LOG=${LOG:-rizond.log}
+    volumes:
+      - ./build:/rizond:Z
+    networks:
+      localnet:
+        ipv4_address: 192.168.10.2
+
+  rizonnode1:
+    container_name: rizonnode1
+    image: "rizon-world/rizon-node"
+    ports:
+      - "26659-26660:26656-26657"
+    environment:
+      - ID=1
+      - LOG=${LOG:-rizond.log}
+    volumes:
+      - ./build:/rizond:Z
+    networks:
+      localnet:
+        ipv4_address: 192.168.10.3
+
+  rizonnode2:
+    container_name: rizonnode2
+    image: "rizon-world/rizon-node"
+    environment:
+      - ID=2
+      - LOG=${LOG:-rizond.log}
+    ports:
+      - "26661-26662:26656-26657"
+    volumes:
+      - ./build:/rizond:Z
+    networks:
+      localnet:
+        ipv4_address: 192.168.10.4
+
+  rizonnode3:
+    container_name: rizonnode3
+    image: "rizon-world/rizon-node"
+    environment:
+      - ID=3
+      - LOG=${LOG:-rizond.log}
+    ports:
+      - "26663-26664:26656-26657"
+    volumes:
+      - ./build:/rizond:Z
+    networks:
+      localnet:
+        ipv4_address: 192.168.10.5
+
+networks:
+  localnet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      -
+        subnet: 192.168.10.0/16
