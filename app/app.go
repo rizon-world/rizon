@@ -30,6 +30,7 @@ import (
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
+	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	authzmodule "github.com/cosmos/cosmos-sdk/x/authz/module"
@@ -75,17 +76,22 @@ import (
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	"github.com/cosmos/ibc-go/v2/modules/apps/transfer"
-	ibctransferkeeper "github.com/cosmos/ibc-go/v2/modules/apps/transfer/keeper"
-	ibctransfertypes "github.com/cosmos/ibc-go/v2/modules/apps/transfer/types"
-	ibc "github.com/cosmos/ibc-go/v2/modules/core"
-	ibcclient "github.com/cosmos/ibc-go/v2/modules/core/02-client"
-	ibcclientclient "github.com/cosmos/ibc-go/v2/modules/core/02-client/client"
-	ibcclienttypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
-	ibcconnectiontypes "github.com/cosmos/ibc-go/v2/modules/core/03-connection/types"
-	porttypes "github.com/cosmos/ibc-go/v2/modules/core/05-port/types"
-	ibchost "github.com/cosmos/ibc-go/v2/modules/core/24-host"
-	ibckeeper "github.com/cosmos/ibc-go/v2/modules/core/keeper"
+	ica "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts"
+	icacontrollertypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/controller/types"
+	icahost "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/host"
+	icahostkeeper "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/host/keeper"
+	icahosttypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/host/types"
+	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
+	"github.com/cosmos/ibc-go/v3/modules/apps/transfer"
+	ibctransferkeeper "github.com/cosmos/ibc-go/v3/modules/apps/transfer/keeper"
+	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
+	ibc "github.com/cosmos/ibc-go/v3/modules/core"
+	ibcclient "github.com/cosmos/ibc-go/v3/modules/core/02-client"
+	ibcclientclient "github.com/cosmos/ibc-go/v3/modules/core/02-client/client"
+	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
+	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
@@ -95,6 +101,7 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	dbm "github.com/tendermint/tm-db"
 
+	rizonante "github.com/rizon-world/rizon/ante"
 	rizonappparams "github.com/rizon-world/rizon/app/params"
 	// unnamed import of statik for swagger UI support
 	_ "github.com/rizon-world/rizon/client/docs/statik"
@@ -109,9 +116,6 @@ import (
 
 	rizonmint "github.com/rizon-world/rizon/x/mint"
 )
-
-const appName = "RizonApp"
-const upgradeName = "Magnus"
 
 var (
 	// DefaultNodeHome default home directories for the application daemon
@@ -148,12 +152,14 @@ var (
 		vesting.AppModuleBasic{},
 		tokenswap.AppModuleBasic{},
 		treasury.AppModuleBasic{},
+		ica.AppModuleBasic{},
 	)
 
 	// module account permissions
 	maccPerms = map[string][]string{
 		authtypes.FeeCollectorName:     nil,
 		distrtypes.ModuleName:          nil,
+		icatypes.ModuleName:            nil,
 		minttypes.ModuleName:           {authtypes.Minter},
 		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
@@ -198,6 +204,7 @@ type RizonApp struct { // nolint: golint
 	UpgradeKeeper    upgradekeeper.Keeper
 	ParamsKeeper     paramskeeper.Keeper
 	IBCKeeper        *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
+	ICAHostKeeper    icahostkeeper.Keeper
 	EvidenceKeeper   evidencekeeper.Keeper
 	TransferKeeper   ibctransferkeeper.Keeper
 	TokenswapKeeper  tokenswapkeeper.Keeper
@@ -208,6 +215,7 @@ type RizonApp struct { // nolint: golint
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
 	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
+	ScopedICAHostKeeper  capabilitykeeper.ScopedKeeper
 
 	// the module manager
 	mm *module.Manager
@@ -253,7 +261,8 @@ func NewRizonApp(
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
-		tokenswaptypes.StoreKey, treasurytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey,
+		tokenswaptypes.StoreKey, treasurytypes.StoreKey,
+		feegrant.StoreKey, authzkeeper.StoreKey, icahosttypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -285,6 +294,7 @@ func NewRizonApp(
 	app.CapabilityKeeper = capabilitykeeper.NewKeeper(appCodec, keys[capabilitytypes.StoreKey], memKeys[capabilitytypes.MemStoreKey])
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
+	scopedICAHostKeeper := app.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
 	app.CapabilityKeeper.Seal()
 
 	// add keepers
@@ -388,7 +398,8 @@ func NewRizonApp(
 
 	// register the proposal types
 	govRouter := govtypes.NewRouter()
-	govRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
+	govRouter.
+		AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
@@ -410,16 +421,32 @@ func NewRizonApp(
 		keys[ibctransfertypes.StoreKey],
 		app.GetSubspace(ibctransfertypes.ModuleName),
 		app.IBCKeeper.ChannelKeeper,
+		app.IBCKeeper.ChannelKeeper,
 		&app.IBCKeeper.PortKeeper,
 		app.AccountKeeper,
 		app.BankKeeper,
 		scopedTransferKeeper,
 	)
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
+	transferIBCModule := transfer.NewIBCModule(app.TransferKeeper)
+
+	app.ICAHostKeeper = icahostkeeper.NewKeeper(
+		appCodec, keys[icahosttypes.StoreKey],
+		app.GetSubspace(icahosttypes.SubModuleName),
+		app.IBCKeeper.ChannelKeeper,
+		&app.IBCKeeper.PortKeeper,
+		app.AccountKeeper,
+		scopedICAHostKeeper,
+		app.MsgServiceRouter(),
+	)
+	icaModule := ica.NewAppModule(nil, &app.ICAHostKeeper)
+	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
 
 	// Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
-	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferModule)
+	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
+		AddRoute(ibctransfertypes.ModuleName, transferIBCModule)
+
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	// create evidence keeper with router
@@ -462,39 +489,69 @@ func NewRizonApp(
 		tokenswap.NewAppModule(appCodec, app.TokenswapKeeper, app.BankKeeper),
 		treasury.NewAppModule(appCodec, app.TreasuryKeeper, app.BankKeeper),
 		transferModule,
+		icaModule,
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
 	// there is nothing left over in the validator fee pool, so as to keep the
 	// CanWithdrawInvariant invariant.
 	// NOTE: staking module is required if HistoricalEntries param > 0
+	// NOTE: capability module's beginblocker must come before any modules using capabilities (e.g. IBC)
 	app.mm.SetOrderBeginBlockers(
 		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
-		minttypes.ModuleName,
+		crisistypes.ModuleName,
+		govtypes.ModuleName,
+		stakingtypes.ModuleName,
+		ibctransfertypes.ModuleName,
+		ibchost.ModuleName,
+		icatypes.ModuleName,
+		authtypes.ModuleName,
+		banktypes.ModuleName,
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
+		minttypes.ModuleName,
+		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
-		stakingtypes.ModuleName,
-		ibchost.ModuleName,
+		authz.ModuleName,
+		feegrant.ModuleName,
+		paramstypes.ModuleName,
+		vestingtypes.ModuleName,
+		tokenswaptypes.ModuleName,
+		treasurytypes.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
-		treasurytypes.ModuleName,
+		ibctransfertypes.ModuleName,
+		ibchost.ModuleName,
+		icatypes.ModuleName,
 		feegrant.ModuleName,
 		authz.ModuleName,
+		capabilitytypes.ModuleName,
+		authtypes.ModuleName,
+		banktypes.ModuleName,
+		distrtypes.ModuleName,
+		slashingtypes.ModuleName,
+		minttypes.ModuleName,
+		genutiltypes.ModuleName,
+		evidencetypes.ModuleName,
+		paramstypes.ModuleName,
+		upgradetypes.ModuleName,
+		vestingtypes.ModuleName,
+		tokenswaptypes.ModuleName,
+		treasurytypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
+	// NOTE: The genutils module must also occur after auth so that it can access the params from auth.
 	// NOTE: Capability module must occur first so that it can initialize any capabilities
 	// so that other modules that want to create or claim capabilities afterwards in InitChain
 	// can do so safely.
 	app.mm.SetOrderInitGenesis(
 		capabilitytypes.ModuleName,
-		authtypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
 		stakingtypes.ModuleName,
@@ -502,12 +559,17 @@ func NewRizonApp(
 		govtypes.ModuleName,
 		minttypes.ModuleName,
 		crisistypes.ModuleName,
-		ibchost.ModuleName,
-		genutiltypes.ModuleName,
-		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
+		ibchost.ModuleName,
+		icatypes.ModuleName,
+		evidencetypes.ModuleName,
 		feegrant.ModuleName,
 		authz.ModuleName,
+		authtypes.ModuleName,
+		genutiltypes.ModuleName,
+		paramstypes.ModuleName,
+		upgradetypes.ModuleName,
+		vestingtypes.ModuleName,
 		tokenswaptypes.ModuleName,
 		treasurytypes.ModuleName,
 	)
@@ -546,8 +608,8 @@ func NewRizonApp(
 	app.MountTransientStores(tkeys)
 	app.MountMemoryStores(memKeys)
 
-	anteHandler, err := NewAnteHandler(
-		HandlerOptions{
+	anteHandler, err := rizonante.NewAnteHandler(
+		rizonante.HandlerOptions{
 			HandlerOptions: ante.HandlerOptions{
 				AccountKeeper:   app.AccountKeeper,
 				BankKeeper:      app.BankKeeper,
@@ -555,7 +617,8 @@ func NewRizonApp(
 				SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
 				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
 			},
-			IBCChannelkeeper: app.IBCKeeper.ChannelKeeper,
+			IBCkeeper:            app.IBCKeeper,
+			BypassMinFeeMsgTypes: cast.ToStringSlice(appOpts.Get(rizonappparams.BypassMinFeeMsgTypesKey)),
 		},
 	)
 	if err != nil {
@@ -569,30 +632,46 @@ func NewRizonApp(
 
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
-		func(ctx sdk.Context, _ upgradetypes.Plan, _ module.VersionMap) (module.VersionMap, error) {
-			app.IBCKeeper.ConnectionKeeper.SetParams(ctx, ibcconnectiontypes.DefaultParams())
-
-			fromVM := make(map[string]uint64)
-			for moduleName := range app.mm.Modules {
-				fromVM[moduleName] = 1
+		func(ctx sdk.Context, _ upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+			fromVM[icatypes.ModuleName] = icaModule.ConsensusVersion()
+			// create ICS27 Controller submodule params
+			controllerParams := icacontrollertypes.Params{}
+			// create ICS27 Host submodule params
+			hostParams := icahosttypes.Params{
+				HostEnabled: true,
+				AllowMessages: []string{
+					authzMsgExec,
+					authzMsgGrant,
+					authzMsgRevoke,
+					bankMsgSend,
+					bankMsgMultiSend,
+					distrMsgSetWithdrawAddr,
+					distrMsgWithdrawValidatorCommission,
+					distrMsgFundCommunityPool,
+					distrMsgWithdrawDelegatorReward,
+					feegrantMsgGrantAllowance,
+					feegrantMsgRevokeAllowance,
+					govMsgVoteWeighted,
+					govMsgSubmitProposal,
+					govMsgDeposit,
+					govMsgVote,
+					stakingMsgEditValidator,
+					stakingMsgDelegate,
+					stakingMsgUndelegate,
+					stakingMsgBeginRedelegate,
+					stakingMsgCreateValidator,
+					vestingMsgCreateVestingAccount,
+					transferMsgTransfer,
+				},
 			}
-			// delete new modules from the map, for _new_ modules as to not skip InitGenesis
-			delete(fromVM, authz.ModuleName)
-			delete(fromVM, feegrant.ModuleName)
 
-			// make fromVM[authtypes.ModuleName] = 2 to skip the first RunMigrations for auth (because from version 2 to migration version 2 will not migrate)
-			fromVM[authtypes.ModuleName] = 2
+			ctx.Logger().Info("start to init interchainaccount module...")
+			// initialize ICS27 module
+			icaModule.InitModule(ctx, controllerParams, hostParams)
 
-			// the first RunMigrations, which will migrate all the old modules except auth module
-			newVM, err := app.mm.RunMigrations(ctx, app.configurator, fromVM)
-			if err != nil {
-				return nil, err
-			}
-			// now update auth version back to 1, to make the second RunMigrations includes only auth
-			newVM[authtypes.ModuleName] = 1
+			ctx.Logger().Info("start to run module migrations...")
 
-			// RunMigrations twice is just a way to make auth module's migrates after staking
-			return app.mm.RunMigrations(ctx, app.configurator, newVM)
+			return app.mm.RunMigrations(ctx, app.configurator, fromVM)
 		},
 	)
 
@@ -603,7 +682,7 @@ func NewRizonApp(
 
 	if upgradeInfo.Name == upgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := store.StoreUpgrades{
-			Added: []string{authz.ModuleName, feegrant.ModuleName},
+			Added: []string{icahosttypes.StoreKey},
 		}
 
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
@@ -785,6 +864,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(tokenswaptypes.ModuleName)
 	paramsKeeper.Subspace(treasurytypes.ModuleName)
+	paramsKeeper.Subspace(icahosttypes.SubModuleName)
 
 	return paramsKeeper
 }
