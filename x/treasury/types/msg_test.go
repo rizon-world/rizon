@@ -2,7 +2,7 @@ package types_test
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	rizon "github.com/rizon-world/rizon/app"
+	rizon "github.com/rizon-world/rizon/app/helpers"
 	tkswaptypes "github.com/rizon-world/rizon/x/tokenswap/types"
 	"github.com/rizon-world/rizon/x/treasury/types"
 	"github.com/stretchr/testify/require"

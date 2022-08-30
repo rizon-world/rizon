@@ -1,7 +1,7 @@
 package types_test
 
 import (
-	rizon "github.com/rizon-world/rizon/app"
+	rizon "github.com/rizon-world/rizon/app/helpers"
 	"github.com/stretchr/testify/require"
 	"testing"
 

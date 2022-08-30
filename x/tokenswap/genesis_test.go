@@ -4,7 +4,7 @@ import (
 	"github.com/rizon-world/rizon/x/tokenswap"
 	"testing"
 
-	rizon "github.com/rizon-world/rizon/app"
+	rizon "github.com/rizon-world/rizon/app/helpers"
 	"github.com/rizon-world/rizon/x/tokenswap/types"
 	"github.com/stretchr/testify/require"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"

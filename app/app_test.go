@@ -1,10 +1,12 @@
-package rizon
+package rizon_test
 
 import (
 	"encoding/json"
 	"os"
 	"testing"
 
+	rizonapp "github.com/rizon-world/rizon/app"
+	"github.com/rizon-world/rizon/app/helpers"
 	"github.com/rizon-world/rizon/types"
 
 	"github.com/stretchr/testify/require"
@@ -16,28 +18,20 @@ import (
 func TestRizonAppExportAndBlockedAddress(t *testing.T) {
 	types.SetConfig()
 
-	encCfg := MakeEncodingConfig()
+	encCfg := rizonapp.MakeEncodingConfig()
 	db := dbm.NewMemDB()
-	app := NewRizonApp(
+	app := rizonapp.NewRizonApp(
 		log.NewTMLogger(log.NewSyncWriter(os.Stdout)),
 		db,
 		nil,
 		true,
 		map[int64]bool{},
-		DefaultNodeHome,
+		rizonapp.DefaultNodeHome,
 		0,
 		encCfg,
-		EmptyAppOptions{})
+		helpers.EmptyAppOptions{})
 
-	for acc := range maccPerms {
-		require.True(
-			t,
-			app.BankKeeper.BlockedAddr(app.AccountKeeper.GetModuleAddress(acc)),
-			"ensure that blocked addresses are properly set in bank keeper",
-		)
-	}
-
-	genesisState := NewDefaultGenesisState()
+	genesisState := rizonapp.NewDefaultGenesisState()
 	stateBytes, err := json.MarshalIndent(genesisState, "", "  ")
 	require.NoError(t, err)
 
@@ -51,12 +45,7 @@ func TestRizonAppExportAndBlockedAddress(t *testing.T) {
 	app.Commit()
 
 	// Making a new app object with the db, so that initchain hasn't been called
-	app2 := NewRizonApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, encCfg, EmptyAppOptions{})
+	app2 := rizonapp.NewRizonApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, rizonapp.DefaultNodeHome, 0, encCfg, helpers.EmptyAppOptions{})
 	_, err = app2.ExportAppStateAndValidators(false, []string{})
 	require.NoError(t, err, "ExportAppStateAndValidators should not have an error")
-}
-
-func TestGetMaccPerms(t *testing.T) {
-	dup := GetMaccPerms()
-	require.Equal(t, maccPerms, dup, "duplicated module account permissions differed from actual module account permissions")
 }
