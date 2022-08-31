@@ -3,7 +3,7 @@ package rizon
 // nolint: gosec
 const (
 	appName     = "RizonApp"
-	upgradeName = "Magnus-2"
+	upgradeName = "Gargantua"
 
 	authzMsgExec                        = "/cosmos.authz.v1beta1.MsgExec"
 	authzMsgGrant                       = "/cosmos.authz.v1beta1.MsgGrant"
