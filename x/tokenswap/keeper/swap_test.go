@@ -7,7 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	rizon "github.com/rizon-world/rizon/app"
+	rizon "github.com/rizon-world/rizon/app/helpers"
 	rizontypes "github.com/rizon-world/rizon/types"
 	"github.com/rizon-world/rizon/x/tokenswap/types"
 )

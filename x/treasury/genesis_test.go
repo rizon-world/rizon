@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/stretchr/testify/require"
 
-	rizon "github.com/rizon-world/rizon/app"
+	rizon "github.com/rizon-world/rizon/app/helpers"
 	"github.com/rizon-world/rizon/x/treasury"
 	"github.com/rizon-world/rizon/x/treasury/types"
 	abci "github.com/tendermint/tendermint/abci/types"

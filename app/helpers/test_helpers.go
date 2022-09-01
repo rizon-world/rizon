@@ -1,14 +1,17 @@
-package rizon
+package helpers
 
 import (
 	"encoding/json"
-	rizontypes "github.com/rizon-world/rizon/types"
+	"time"
+
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
-	"time"
+
+	rizonapp "github.com/rizon-world/rizon/app"
+	rizontypes "github.com/rizon-world/rizon/types"
 )
 
 var SetConfigFlag = false
@@ -46,30 +49,30 @@ func SetRizonConfig() {
 	}
 }
 
-func setup(withGenesis bool, invCheckPeriod uint) (*RizonApp, GenesisState) {
+func setup(withGenesis bool, invCheckPeriod uint) (*rizonapp.RizonApp, rizonapp.GenesisState) {
 	SetRizonConfig()
 
 	db := dbm.NewMemDB()
-	encCdc := MakeEncodingConfig()
+	encCdc := rizonapp.MakeEncodingConfig()
 	// A Nop logger is set in RizonApp.
-	app := NewRizonApp(log.NewNopLogger(),
+	app := rizonapp.NewRizonApp(log.NewNopLogger(),
 		db,
 		nil,
 		true,
 		map[int64]bool{},
-		DefaultNodeHome,
+		rizonapp.DefaultNodeHome,
 		invCheckPeriod,
 		encCdc,
 		EmptyAppOptions{})
 
 	if withGenesis {
-		return app, NewDefaultGenesisState()
+		return app, rizonapp.NewDefaultGenesisState()
 	}
-	return app, GenesisState{}
+	return app, rizonapp.GenesisState{}
 }
 
 // Setup initializes a new RizonApp.
-func Setup(isCheckTx bool) *RizonApp {
+func Setup(isCheckTx bool) *rizonapp.RizonApp {
 	app, genesisState := setup(!isCheckTx, 5)
 	if !isCheckTx {
 		// init chain must be called to stop deliverState from being nil
