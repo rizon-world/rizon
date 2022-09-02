@@ -13,8 +13,7 @@ import (
 type HandlerOptions struct {
 	ante.HandlerOptions
 
-	IBCkeeper            *ibckeeper.Keeper
-	BypassMinFeeMsgTypes []string
+	IBCkeeper *ibckeeper.Keeper
 }
 
 func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
@@ -36,7 +35,7 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 	anteDecorators := []sdk.AnteDecorator{
 		ante.NewSetUpContextDecorator(),
 		ante.NewRejectExtensionOptionsDecorator(),
-		NewMempoolFeeDecorator(opts.BypassMinFeeMsgTypes),
+		ante.NewMempoolFeeDecorator(),
 		ante.NewValidateBasicDecorator(),
 		ante.NewTxTimeoutHeightDecorator(),
 		ante.NewValidateMemoDecorator(opts.AccountKeeper),

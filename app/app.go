@@ -617,8 +617,7 @@ func NewRizonApp(
 				SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
 				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
 			},
-			IBCkeeper:            app.IBCKeeper,
-			BypassMinFeeMsgTypes: cast.ToStringSlice(appOpts.Get(rizonappparams.BypassMinFeeMsgTypesKey)),
+			IBCkeeper: app.IBCKeeper,
 		},
 	)
 	if err != nil {
