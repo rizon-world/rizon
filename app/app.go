@@ -474,7 +474,7 @@ func NewRizonApp(
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
-	supportedFeatures := "iterator,staking,stargate"
+	supportedFeatures := "iterator,staking,stargate,cosmwasm_1_1"
 	wasmOpts := GetWasmOpts(appOpts)
 	app.WasmKeeper = wasm.NewKeeper(
 		appCodec,
@@ -789,6 +789,17 @@ func NewRizonApp(
 
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
 		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
+	}
+
+	// must be before Loading version
+	// requires the snapshot store to be created and registered as a BaseAppOption
+	if manager := app.SnapshotManager(); manager != nil {
+		err := manager.RegisterExtensions(
+			wasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.WasmKeeper),
+		)
+		if err != nil {
+			panic(fmt.Errorf("failed to register snapshot extension: %s", err))
+		}
 	}
 
 	if loadLatest {
