@@ -15,6 +15,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/keys"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/server"
+	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/snapshots"
 	"github.com/cosmos/cosmos-sdk/store"
@@ -24,12 +25,16 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
+
+	"github.com/CosmWasm/wasmd/x/wasm"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 
 	rizon "github.com/rizon-world/rizon/app"
 	"github.com/rizon-world/rizon/app/params"
@@ -38,9 +43,9 @@ import (
 // NewRootCmd creates a new root command for simd. It is called once in the
 // main function.
 func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
-	encodingConfig := rizon.MakeEncodingConfig()
+	encodingConfig := rizon.MakeTestEncodingConfig()
 	initClientCtx := client.Context{}.
-		WithCodec(encodingConfig.Marshaler).
+		WithCodec(encodingConfig.Codec).
 		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).
 		WithTxConfig(encodingConfig.TxConfig).
 		WithLegacyAmino(encodingConfig.Amino).
@@ -72,13 +77,25 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 
 			viper.Set(tmcli.HomeFlag, initClientCtx.HomeDir)
 
-			return server.InterceptConfigsPreRunHandler(cmd, "", nil)
+			customTemplate, customConfig := initAppConfig()
+			return server.InterceptConfigsPreRunHandler(cmd, customTemplate, customConfig)
 		},
 	}
 
 	initRootCmd(rootCmd, encodingConfig)
 
 	return rootCmd, encodingConfig
+}
+
+func initAppConfig() (string, interface{}) {
+	srvCfg := serverconfig.DefaultConfig()
+	srvCfg.StateSync.SnapshotInterval = 1000
+	srvCfg.StateSync.SnapshotKeepRecent = 10
+
+	return params.CustomConfigTemplate(), params.CustomAppConfig{
+		Config:               *srvCfg,
+		BypassMinFeeMsgTypes: rizon.GetDefaultBypassFeeMessages(),
+	}
 }
 
 func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
@@ -92,7 +109,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		genutilcli.ValidateGenesisCmd(rizon.ModuleBasics),
 		AddGenesisAccountCmd(rizon.DefaultNodeHome),
 		tmcli.NewCompletionCmd(rootCmd, true),
-		debug.Cmd(),
+		addDebugCommands(debug.Cmd()),
 		config.Cmd(),
 	)
 
@@ -112,6 +129,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 
 func addModuleInitFlags(startCmd *cobra.Command) {
 	crisis.AddModuleInitFlags(startCmd)
+	wasm.AddModuleInitFlags(startCmd)
 }
 
 func queryCommand() *cobra.Command {
@@ -201,13 +219,19 @@ func (ac appCreator) newApp(
 	if err != nil {
 		panic(err)
 	}
+	var wasmOpts []wasm.Option
+	if cast.ToBool(appOpts.Get("telemetry.enabled")) {
+		wasmOpts = append(wasmOpts, wasmkeeper.WithVMCacheMetrics(prometheus.DefaultRegisterer))
+	}
 
 	return rizon.NewRizonApp(
 		logger, db, traceStore, true, skipUpgradeHeights,
 		cast.ToString(appOpts.Get(flags.FlagHome)),
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
 		ac.encCfg,
+		rizon.GetEnabledProposals(),
 		appOpts,
+		wasmOpts,
 		baseapp.SetPruning(pruningOpts),
 		baseapp.SetMinGasPrices(cast.ToString(appOpts.Get(server.FlagMinGasPrices))),
 		baseapp.SetHaltHeight(cast.ToUint64(appOpts.Get(server.FlagHaltHeight))),
@@ -219,6 +243,7 @@ func (ac appCreator) newApp(
 		baseapp.SetSnapshotStore(snapshotStore),
 		baseapp.SetSnapshotInterval(cast.ToUint64(appOpts.Get(server.FlagStateSyncSnapshotInterval))),
 		baseapp.SetSnapshotKeepRecent(cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent))),
+		baseapp.SetIAVLCacheSize(cast.ToInt(appOpts.Get(server.FlagIAVLCacheSize))),
 	)
 }
 
@@ -241,6 +266,7 @@ func (ac appCreator) appExport(
 	if height == -1 {
 		loadLatest = true
 	}
+	var emptyWasmOpts []wasm.Option
 
 	rizonApp := rizon.NewRizonApp(
 		logger,
@@ -251,7 +277,9 @@ func (ac appCreator) appExport(
 		homePath,
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
 		ac.encCfg,
+		rizon.GetEnabledProposals(),
 		appOpts,
+		emptyWasmOpts,
 	)
 
 	if height != -1 {
