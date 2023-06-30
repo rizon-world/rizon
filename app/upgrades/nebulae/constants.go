@@ -15,7 +15,7 @@ import (
 
 const (
 	// UpgradeName defines the on-chain upgrade name.
-	UpgradeName = "nebulae"
+	UpgradeName = "Nebulae"
 )
 
 var Upgrade = upgrades.Upgrade{
