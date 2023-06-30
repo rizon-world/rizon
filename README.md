@@ -19,8 +19,9 @@ We currently supports the operating systems below.
 
 You should install the packages below before you build the source.
 
-* [Golang](https://golang.org/doc/install) >= 1.17
+* [Golang](https://golang.org/doc/install) >= 1.20
 * make
+* gcc
 
 ### Build
 

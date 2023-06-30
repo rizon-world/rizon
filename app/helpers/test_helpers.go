@@ -10,6 +10,8 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
+	"github.com/CosmWasm/wasmd/x/wasm"
+
 	rizonapp "github.com/rizon-world/rizon/app"
 	rizontypes "github.com/rizon-world/rizon/types"
 )
@@ -53,7 +55,9 @@ func setup(withGenesis bool, invCheckPeriod uint) (*rizonapp.RizonApp, rizonapp.
 	SetRizonConfig()
 
 	db := dbm.NewMemDB()
-	encCdc := rizonapp.MakeEncodingConfig()
+	encCdc := rizonapp.MakeTestEncodingConfig()
+	var emptyWasmOpts []wasm.Option
+
 	// A Nop logger is set in RizonApp.
 	app := rizonapp.NewRizonApp(log.NewNopLogger(),
 		db,
@@ -63,7 +67,10 @@ func setup(withGenesis bool, invCheckPeriod uint) (*rizonapp.RizonApp, rizonapp.
 		rizonapp.DefaultNodeHome,
 		invCheckPeriod,
 		encCdc,
-		EmptyAppOptions{})
+		rizonapp.GetEnabledProposals(),
+		EmptyAppOptions{},
+		emptyWasmOpts,
+	)
 
 	if withGenesis {
 		return app, rizonapp.NewDefaultGenesisState()
