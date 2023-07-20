@@ -40,6 +40,12 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=rizon \
 ldflags += $(LDFLAGS)
 ldflags := $(strip $(ldflags))
 
+ifeq ($(LINK_STATICALLY),true)
+	ldflags += -linkmode=external -extldflags "-Wl,-z,muldefs -static"
+endif
+ldflags += $(LDFLAGS)
+ldflags := $(strip $(ldflags))
+
 BUILD_FLAGS := -tags "$(build_tags)" -ldflags '$(ldflags)'
 
 .PHONY: install protocgen update-swagger-docs
