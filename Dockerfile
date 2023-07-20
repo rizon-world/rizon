@@ -1,20 +1,18 @@
-FROM golang:alpine3.13 AS build-env
+FROM golang:1.20-alpine AS build-env
 
-# Set up dependencies
-ENV PACKAGES bash curl make git libc-dev gcc linux-headers eudev-dev python3
+ENV PACKAGES make gcc libc-dev linux-headers bash curl git
 
 WORKDIR /rizon
 
-COPY go.mod .
-COPY go.sum .
-
 COPY . .
 
-RUN apk add --no-cache $PACKAGES && make install
+ADD https://github.com/CosmWasm/wasmvm/releases/download/v1.2.1/libwasmvm_muslc.x86_64.a /lib/libwasmvm_muslc.a
+
+RUN apk add --no-cache $PACKAGES && \
+    BUILD_TAGS=muslc LINK_STATICALLY=true make install && \
+    rm -rf /var/cache/apk/*
 
 FROM alpine:edge
-
-RUN apk add --update ca-certificates
 
 WORKDIR /rizon
 
